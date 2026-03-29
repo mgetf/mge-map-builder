@@ -34,10 +34,10 @@ jobs:
         id: installer
         shell: pwsh
         run: |
-          $zip = Get-ChildItem -Path build -Recurse -Filter "*.zip" | Select-Object -First 1
+          $zip = Get-ChildItem -Path artifacts, build -Recurse -Filter "*.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $zip) { Write-Error "No installer zip found"; exit 1 }
           echo "Found: $($zip.FullName)"
           echo "path=$($zip.FullName)" >> $env:GITHUB_OUTPUT
-          echo "name=$($zip.Name)" >> $env:GITHUB_OUTPUT
 
       - name: Upload installer
         uses: softprops/action-gh-release@v2
