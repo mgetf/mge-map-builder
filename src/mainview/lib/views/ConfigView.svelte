@@ -11,10 +11,16 @@
 		setFastMode,
 		setLightPreset,
 		removeArena,
+		startBuild,
+		finishBuild,
+		toBuildConfig,
 		SKYBOX_OPTIONS,
 		LIGHT_PRESETS,
 	} from "$lib/stores/build.svelte.js";
 	import { getArenasState } from "$lib/stores/arenas.svelte.js";
+	import { api } from "$lib/rpc.js";
+
+	let { onNavigate }: { onNavigate: (view: "arenas" | "config" | "build") => void } = $props();
 
 	const build = getBuildState();
 	const arenasState = getArenasState();
@@ -27,6 +33,13 @@
 	function handleMapNameInput(e: Event) {
 		const target = e.target as HTMLInputElement;
 		setMapName(target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""));
+	}
+
+	async function handleBuild() {
+		startBuild();
+		onNavigate("build");
+		const result = await api.build(toBuildConfig());
+		finishBuild(result);
 	}
 
 	let mapNameValue = $derived(build.mapName);
@@ -119,12 +132,12 @@
 				{#if build.totalInstances === 0}
 					<div class="rounded-lg border border-dashed border-border p-6 text-center">
 						<p class="text-sm text-muted-foreground">No arenas selected.</p>
-						<a
-							href="/"
+						<button
+							onclick={() => onNavigate("arenas")}
 							class="text-sm text-primary hover:underline mt-1 inline-block"
 						>
 							Go to Arenas page to add some
-						</a>
+						</button>
 					</div>
 				{:else}
 					<div class="space-y-2">
@@ -170,7 +183,7 @@
 					class="w-full"
 					size="lg"
 					disabled={!build.canBuild}
-					onclick={() => alert("Build functionality will be available in the next update.")}
+					onclick={handleBuild}
 				>
 					{#if !build.canBuild}
 						{build.totalInstances === 0 ? "Select arenas to build" : "Fix errors to build"}

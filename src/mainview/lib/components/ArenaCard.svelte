@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ArenaPackage } from "$lib/stores/arenas.svelte.js";
+	import type { ArenaPackage } from "$lib/types.js";
 	import {
 		Card,
 		CardHeader,

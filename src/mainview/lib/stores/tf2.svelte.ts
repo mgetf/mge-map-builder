@@ -1,3 +1,5 @@
+import { api } from "$lib/rpc.js";
+
 let tf2Path = $state<string | null>(null);
 let detected = $state(false);
 let loading = $state(true);
@@ -19,10 +21,11 @@ export function getTf2State() {
 export async function detectTF2() {
 	loading = true;
 	try {
-		const result = await window.api.detectTF2();
+		const result = await api.detectTF2({});
 		tf2Path = result;
 		detected = result !== null;
-	} catch {
+	} catch (err) {
+		console.error("TF2 detection failed:", err);
 		tf2Path = null;
 		detected = false;
 	} finally {
@@ -30,11 +33,16 @@ export async function detectTF2() {
 	}
 }
 
-export async function setManualTF2Path(path: string): Promise<boolean> {
-	const valid = await window.api.setTF2Path(path);
-	if (valid) {
-		tf2Path = path;
-		detected = true;
+export async function setManualTF2Path(selectedPath: string): Promise<boolean> {
+	try {
+		const valid = await api.setTF2Path({ path: selectedPath });
+		if (valid) {
+			tf2Path = selectedPath;
+			detected = true;
+		}
+		return valid;
+	} catch (err) {
+		console.error("Failed to set TF2 path:", err);
+		return false;
 	}
-	return valid;
 }

@@ -1,4 +1,5 @@
-import type { ArenaPackage } from "../../electron/types.js";
+import type { ArenaPackage } from "$lib/types.js";
+import { api } from "$lib/rpc.js";
 
 let arenas = $state<ArenaPackage[]>([]);
 let loading = $state(true);
@@ -21,9 +22,10 @@ export async function fetchArenas() {
 	if (fetched) return;
 	loading = true;
 	try {
-		arenas = await window.api.getArenas();
+		arenas = await api.getArenas({});
 		fetched = true;
-	} catch {
+	} catch (err) {
+		console.error("Failed to fetch arenas:", err);
 		arenas = [];
 	} finally {
 		loading = false;

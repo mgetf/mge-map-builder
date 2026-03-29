@@ -1,49 +1,31 @@
 {
-  "name": "mge-map-builder",
-  "productName": "MGE Map Builder",
-  "description": "Build custom TF2 MGE maps from prefab arenas",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "main": ".vite/build/main.js",
-  "author": {
-    "name": "Maxi"
-  },
-  "scripts": {
-    "prepare": "svelte-kit sync || echo ''",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "start": "electron-forge start",
-    "package": "vite build && electron-forge package",
-    "make": "vite build && electron-forge make"
-  },
-  "devDependencies": {
-    "@electron-forge/cli": "^7.11.1",
-    "@electron-forge/maker-squirrel": "^7.11.1",
-    "@electron-forge/maker-zip": "^7.11.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
-    "@electron-forge/plugin-fuses": "^7.11.1",
-    "@electron-forge/plugin-vite": "^7.11.1",
-    "@electron/fuses": "^2.0.0",
-    "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.53.0",
-    "@sveltejs/vite-plugin-svelte": "^7.0.0",
-    "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/typography": "^0.5.19",
-    "@tailwindcss/vite": "^4.2.1",
-    "@types/node": "^25.3.0",
-    "bits-ui": "^2.16.4",
-    "electron": "^40.6.0",
-    "svelte": "^5.53.3",
-    "svelte-check": "^4.4.3",
-    "tailwind-variants": "^3.2.2",
-    "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
-  },
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "electron-squirrel-startup": "^1.0.1",
-    "lzma-native": "^8.0.6",
-    "tailwind-merge": "^3.5.0"
-  }
+	"name": "mge-map-builder",
+	"version": "0.1.0",
+	"type": "module",
+	"description": "Build custom TF2 MGE maps from prefab arenas",
+	"scripts": {
+		"start": "vite build && electrobun dev",
+		"dev": "electrobun dev --watch",
+		"dev:hmr": "concurrently \"bun run hmr\" \"bun run start\"",
+		"hmr": "vite --port 5173",
+		"build:canary": "vite build && electrobun build --env=canary"
+	},
+	"dependencies": {
+		"clsx": "^2.1.1",
+		"electrobun": "1.16.0",
+		"tailwind-merge": "^3.5.0"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^7.0.0",
+		"@tailwindcss/forms": "^0.5.11",
+		"@tailwindcss/typography": "^0.5.19",
+		"@tailwindcss/vite": "^4.2.2",
+		"bits-ui": "^2.16.4",
+		"concurrently": "^9.2.1",
+		"svelte": "^5.55.0",
+		"tailwind-variants": "^3.2.2",
+		"tailwindcss": "^4.2.2",
+		"typescript": "^6.0.2",
+		"vite": "^8.0.3"
+	}
 }

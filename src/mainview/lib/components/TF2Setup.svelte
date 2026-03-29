@@ -8,21 +8,30 @@
 		CardContent,
 		CardFooter,
 	} from "$lib/components/ui/card/index.js";
-	import { getTf2State, detectTF2, setManualTF2Path } from "$lib/stores/tf2.svelte.js";
+	import { getTf2State, setManualTF2Path } from "$lib/stores/tf2.svelte.js";
+	import { api } from "$lib/rpc.js";
 
 	const tf2 = getTf2State();
 
 	let browseError = $state<string | null>(null);
+	let browsing = $state(false);
 
 	async function handleBrowse() {
 		browseError = null;
-		const folder = await window.api.selectFolder();
-		if (!folder) return;
-
-		const valid = await setManualTF2Path(folder);
-		if (!valid) {
-			browseError =
-				"Selected folder is not a valid TF2 installation (bin/vbsp.exe not found)";
+		browsing = true;
+		try {
+			const selectedPath = await api.selectFolder({});
+			if (selectedPath) {
+				const valid = await setManualTF2Path(selectedPath);
+				if (!valid) {
+					browseError = "Selected folder doesn't contain TF2 compile tools (bin/vbsp.exe not found).";
+				}
+			}
+		} catch (err) {
+			browseError = "Failed to open folder dialog.";
+			console.error(err);
+		} finally {
+			browsing = false;
 		}
 	}
 
@@ -77,8 +86,8 @@
 			{/if}
 
 			{#if !tf2.loading && !tf2.detected}
-				<Button variant="outline" class="w-full" onclick={handleBrowse}>
-					Browse for TF2 folder...
+				<Button variant="outline" class="w-full" disabled={browsing} onclick={handleBrowse}>
+					{browsing ? "Opening..." : "Browse for TF2 folder..."}
 				</Button>
 				{#if browseError}
 					<p class="text-sm text-destructive">{browseError}</p>

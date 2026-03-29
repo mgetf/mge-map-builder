@@ -1,16 +1,21 @@
 <script lang="ts">
-	import { page } from "$app/stores";
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import { getTf2State } from "$lib/stores/tf2.svelte.js";
 	import { getBuildState } from "$lib/stores/build.svelte.js";
 
+	let {
+		currentView,
+		onNavigate,
+	}: {
+		currentView: "arenas" | "config" | "build";
+		onNavigate: (view: "arenas" | "config" | "build") => void;
+	} = $props();
+
 	const tf2 = getTf2State();
 	const build = getBuildState();
 
-	function isActive(href: string): boolean {
-		const path = $page.url.pathname;
-		if (href === "/") return path === "/" || path === "/arenas/";
-		return path.startsWith(href);
+	function isActive(view: "arenas" | "config"): boolean {
+		return currentView === view;
 	}
 
 	function truncatePath(p: string, maxLen: number = 28): string {
@@ -18,9 +23,9 @@
 		return "..." + p.slice(-(maxLen - 3));
 	}
 
-	const navItems = [
-		{ href: "/", label: "Arenas", icon: "grid" },
-		{ href: "/config/", label: "Build Config", icon: "settings" },
+	const navItems: { view: "arenas" | "config"; label: string; icon: string }[] = [
+		{ view: "arenas", label: "Arenas", icon: "grid" },
+		{ view: "config", label: "Build Config", icon: "settings" },
 	];
 </script>
 
@@ -38,9 +43,9 @@
 	<!-- Navigation -->
 	<nav class="flex-1 p-3 space-y-1">
 		{#each navItems as item}
-			<a
-				href={item.href}
-				class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors {isActive(item.href)
+			<button
+				onclick={() => onNavigate(item.view)}
+				class="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors {isActive(item.view)
 					? 'bg-sidebar-accent text-sidebar-accent-foreground'
 					: 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}"
 			>
@@ -55,12 +60,12 @@
 					</svg>
 				{/if}
 				<span>{item.label}</span>
-				{#if item.href === "/" && build.totalInstances > 0}
+				{#if item.view === "arenas" && build.totalInstances > 0}
 					<span class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground px-1.5">
 						{build.totalInstances}
 					</span>
 				{/if}
-			</a>
+			</button>
 		{/each}
 	</nav>
 

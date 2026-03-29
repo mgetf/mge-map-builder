@@ -1,7 +1,10 @@
 import type {
 	BuildConfig,
+	BuildResult,
+	CompileProgress,
+	CompileStage,
 	LightEnvironment,
-} from "../../electron/types.js";
+} from "$lib/types.js";
 
 // --- Lighting presets ---
 
@@ -58,7 +61,7 @@ export const SKYBOX_OPTIONS = [
 	"sky_tf2_04",
 ] as const;
 
-// --- State ---
+// --- Arena selection + map config state ---
 
 let selectedArenas = $state<Map<string, number>>(new Map());
 let mapName = $state("mge_custom");
@@ -66,8 +69,35 @@ let fastMode = $state(true);
 let skybox = $state<string>("sky_trainyard_01");
 let lightPresetIndex = $state(0);
 
+// --- Compile pipeline state ---
+
+export type CompileStatus = "idle" | "running" | "done" | "error";
+
+// Per-stage summary: latest status and elapsed time for each stage
+export interface StageInfo {
+	status: "pending" | "running" | "done" | "error";
+	elapsedMs: number;
+}
+
+const STAGE_ORDER: CompileStage[] = ["vbsp", "vvis", "vrad", "pack"];
+
+function initialStages(): Record<CompileStage, StageInfo> {
+	return {
+		vbsp: { status: "pending", elapsedMs: 0 },
+		vvis: { status: "pending", elapsedMs: 0 },
+		vrad: { status: "pending", elapsedMs: 0 },
+		pack: { status: "pending", elapsedMs: 0 },
+	};
+}
+
+let compileStatus = $state<CompileStatus>("idle");
+let compileStages = $state<Record<CompileStage, StageInfo>>(initialStages());
+let compileLog = $state<string[]>([]);
+let buildResult = $state<BuildResult | null>(null);
+
 export function getBuildState() {
 	return {
+		// Arena selection
 		get selectedArenas() {
 			return selectedArenas;
 		},
@@ -104,6 +134,23 @@ export function getBuildState() {
 			if (!mapName.startsWith("mge_"))
 				return 'Must start with "mge_"';
 			return null;
+		},
+
+		// Compile pipeline
+		get compileStatus() {
+			return compileStatus;
+		},
+		get compileStages() {
+			return compileStages;
+		},
+		get compileLog() {
+			return compileLog;
+		},
+		get buildResult() {
+			return buildResult;
+		},
+		get stageOrder() {
+			return STAGE_ORDER;
 		},
 	};
 }
@@ -153,4 +200,39 @@ export function toBuildConfig(): BuildConfig {
 			}),
 		),
 	};
+}
+
+// --- Compile lifecycle functions ---
+
+export function startBuild() {
+	compileStatus = "running";
+	compileStages = initialStages();
+	compileLog = [];
+	buildResult = null;
+}
+
+export function addProgress(p: CompileProgress) {
+	// Append to log (keep last 500 lines to prevent unbounded growth)
+	compileLog = [...compileLog.slice(-499), p.output];
+
+	// Update stage info
+	compileStages = {
+		...compileStages,
+		[p.stage]: {
+			status: p.status === "running" ? "running" : p.status,
+			elapsedMs: p.elapsedMs,
+		} satisfies StageInfo,
+	};
+}
+
+export function finishBuild(result: BuildResult) {
+	buildResult = result;
+	compileStatus = result.success ? "done" : "error";
+}
+
+export function resetBuild() {
+	compileStatus = "idle";
+	compileStages = initialStages();
+	compileLog = [];
+	buildResult = null;
 }

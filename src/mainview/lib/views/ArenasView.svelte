@@ -3,6 +3,8 @@
 	import { getArenasState } from "$lib/stores/arenas.svelte.js";
 	import { getBuildState } from "$lib/stores/build.svelte.js";
 
+	let { onNavigate }: { onNavigate: (view: "arenas" | "config") => void } = $props();
+
 	const arenasState = getArenasState();
 	const build = getBuildState();
 </script>
@@ -45,15 +47,15 @@
 				<span class="font-semibold text-foreground">{build.totalInstances}</span>
 				arena instance{build.totalInstances !== 1 ? "s" : ""} selected
 			</div>
-			<a
-				href="/config/"
+			<button
+				onclick={() => onNavigate("config")}
 				class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
 			>
 				Configure Build
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<polyline points="9 18 15 12 9 6" />
 				</svg>
-			</a>
+			</button>
 		</div>
 	{/if}
 </div>
