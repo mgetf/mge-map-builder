@@ -83,6 +83,7 @@ export interface BuildConfig {
 	lightEnvironment: LightEnvironment;
 	fastMode: boolean;
 	arenas: BuildArenaEntry[];
+	outputDir: string | null; // copy BSP + cfg here after build; null = temp only
 }
 
 export interface BuildArenaEntry {

@@ -9,7 +9,7 @@
 	const build = getBuildState();
 </script>
 
-<div class="flex flex-col h-full">
+<div>
 	<!-- Header -->
 	<div class="border-b border-border px-6 py-4">
 		<h2 class="text-lg font-semibold text-foreground">Select Arenas</h2>
@@ -19,7 +19,7 @@
 	</div>
 
 	<!-- Grid -->
-	<div class="flex-1 overflow-y-auto p-6">
+	<div class="p-6" class:pb-20={build.totalInstances > 0}>
 		{#if arenasState.loading}
 			<div class="flex items-center justify-center h-48 text-muted-foreground">
 				<div class="text-center space-y-2">
@@ -42,7 +42,7 @@
 
 	<!-- Bottom summary bar -->
 	{#if build.totalInstances > 0}
-		<div class="border-t border-border bg-card px-6 py-3 flex items-center justify-between">
+		<div class="fixed bottom-0 right-0 left-60 border-t border-border bg-card px-6 py-3 flex items-center justify-between z-10">
 			<div class="text-sm text-muted-foreground">
 				<span class="font-semibold text-foreground">{build.totalInstances}</span>
 				arena instance{build.totalInstances !== 1 ? "s" : ""} selected

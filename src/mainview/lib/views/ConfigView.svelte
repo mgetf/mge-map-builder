@@ -10,6 +10,7 @@
 		setSkybox,
 		setFastMode,
 		setLightPreset,
+		setOutputDir,
 		removeArena,
 		startBuild,
 		finishBuild,
@@ -33,6 +34,11 @@
 	function handleMapNameInput(e: Event) {
 		const target = e.target as HTMLInputElement;
 		setMapName(target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""));
+	}
+
+	async function handleSelectOutputDir() {
+		const dir = await api.selectFolder({});
+		if (dir) setOutputDir(dir);
 	}
 
 	async function handleBuild() {
@@ -120,6 +126,30 @@
 						checked={fastModeValue}
 						onchange={() => setFastMode(!build.fastMode)}
 					/>
+				</div>
+
+				<!-- Output Directory -->
+				<div class="space-y-2">
+					<Label>Output Directory</Label>
+					<p class="text-xs text-muted-foreground">
+						Where to place the final BSP and config after building.
+					</p>
+					<div class="flex gap-2">
+						<Input
+							value={build.outputDir ?? ""}
+							placeholder="Temp folder (default)"
+							readonly
+							class="flex-1 cursor-default"
+						/>
+						<Button variant="outline" size="sm" onclick={handleSelectOutputDir}>
+							Browse
+						</Button>
+						{#if build.outputDir}
+							<Button variant="outline" size="sm" onclick={() => setOutputDir(null)}>
+								Clear
+							</Button>
+						{/if}
+					</div>
 				</div>
 			</div>
 

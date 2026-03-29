@@ -27,7 +27,7 @@
 {#if showSetup}
 	<TF2Setup onContinue={() => (setupDismissed = true)} />
 {:else}
-	<div class="flex h-screen overflow-hidden">
+	<div class="flex h-full overflow-hidden">
 		<Sidebar {currentView} onNavigate={navigate} />
 		<main class="flex-1 overflow-y-auto bg-background">
 			{#if currentView === "arenas"}

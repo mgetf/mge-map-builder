@@ -68,6 +68,7 @@ let mapName = $state("mge_custom");
 let fastMode = $state(true);
 let skybox = $state<string>("sky_trainyard_01");
 let lightPresetIndex = $state(0);
+let outputDir = $state<string | null>(null);
 
 // --- Compile pipeline state ---
 
@@ -112,6 +113,9 @@ export function getBuildState() {
 		},
 		get lightPresetIndex() {
 			return lightPresetIndex;
+		},
+		get outputDir() {
+			return outputDir;
 		},
 		get totalInstances() {
 			let total = 0;
@@ -187,12 +191,17 @@ export function setLightPreset(index: number) {
 	lightPresetIndex = index;
 }
 
+export function setOutputDir(dir: string | null) {
+	outputDir = dir;
+}
+
 export function toBuildConfig(): BuildConfig {
 	return {
 		mapName,
 		skybox,
 		lightEnvironment: LIGHT_PRESETS[lightPresetIndex].value,
 		fastMode,
+		outputDir,
 		arenas: Array.from(selectedArenas.entries()).map(
 			([arenaId, count]) => ({
 				arenaId,

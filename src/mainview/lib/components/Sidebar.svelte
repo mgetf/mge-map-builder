@@ -29,7 +29,7 @@
 	];
 </script>
 
-<aside class="flex flex-col w-60 shrink-0 bg-sidebar border-r border-sidebar-border h-screen">
+<aside class="flex flex-col w-60 shrink-0 bg-sidebar border-r border-sidebar-border h-full">
 	<!-- Logo / Title -->
 	<div class="p-5 pb-4">
 		<h1 class="text-base font-bold tracking-tight text-sidebar-foreground">

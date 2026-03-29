@@ -53,9 +53,17 @@ export function generateVMF(
 		});
 	}
 
-	// light_environment — 500 units above first arena's origin
+	// light_environment — placed at the center of the first arena's bounding box
+	// Must be inside sealed brushwork or VBSP reports a leak.
+	// The instance origin != the arena geometry center, so we compute the
+	// world-space center of the arena's bounds to guarantee containment.
 	if (placedArenas.length > 0) {
-		const [ox, oy, oz] = placedArenas[0].origin;
+		const p = placedArenas[0];
+		const [ox, oy, oz] = p.origin;
+		const { bounds } = p.arena;
+		const centerX = ox + (bounds.minX + bounds.maxX) / 2;
+		const centerY = oy + (bounds.minY + bounds.maxY) / 2;
+		const centerZ = oz + (bounds.minZ + bounds.maxZ) / 2;
 		const le = config.lightEnvironment;
 
 		entities.push({
@@ -69,7 +77,7 @@ export function generateVMF(
 			_lightscaleHDR: le._lightscaleHDR,
 			_ambientHDR: le._ambientHDR,
 			_AmbientScaleHDR: le._AmbientScaleHDR,
-			origin: `${ox} ${oy} ${oz + 500}`,
+			origin: `${centerX} ${centerY} ${centerZ}`,
 		});
 	}
 

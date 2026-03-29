@@ -18,6 +18,7 @@ export type AppRPC = {
 		};
 		messages: {
 			buildProgress: CompileProgress;
+			buildComplete: BuildResult;
 		};
 	}>;
 	webview: RPCSchema<{

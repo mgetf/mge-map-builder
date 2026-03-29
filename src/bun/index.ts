@@ -145,12 +145,25 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 						},
 					});
 
-					return {
-						...result,
-						cfgPath: result.success ? cfgPath : null,
-					};
+					let finalResult: typeof result;
+
+					if (result.success && config.outputDir) {
+						const outBsp = path.join(config.outputDir, path.basename(result.bspPath!));
+						const outCfg = path.join(config.outputDir, path.basename(cfgPath));
+						fs.copyFileSync(result.bspPath!, outBsp);
+						fs.copyFileSync(cfgPath, outCfg);
+						finalResult = { ...result, bspPath: outBsp, cfgPath: outCfg };
+					} else {
+						finalResult = {
+							...result,
+							cfgPath: result.success ? cfgPath : null,
+						};
+					}
+
+					mainWindow?.webview.rpc.send.buildComplete(finalResult);
+					return finalResult;
 				} catch (err) {
-					return {
+					const errorResult = {
 						success: false,
 						bspPath: null,
 						cfgPath: null,
@@ -158,7 +171,9 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 							err instanceof Error
 								? err.message
 								: "Unknown build error",
-					};
+					} as const;
+					mainWindow?.webview.rpc.send.buildComplete(errorResult);
+					return errorResult;
 				}
 			},
 
@@ -218,9 +233,18 @@ mainWindow = new BrowserWindow({
 	url,
 	rpc,
 	frame: {
-		width: 1200,
-		height: 800,
+		width: 1400,
+		height: 900,
 	},
+});
+
+// WebView2 on Windows miscalculates the initial content area size.
+// Nudging the window size after DOM ready forces a correct layout pass.
+mainWindow.webview.on("dom-ready", () => {
+	if (!mainWindow) return;
+	const { width, height } = mainWindow.getSize();
+	mainWindow.setSize(width, height + 1);
+	setTimeout(() => mainWindow?.setSize(width, height), 50);
 });
 
 console.log("MGE Map Builder started!");
