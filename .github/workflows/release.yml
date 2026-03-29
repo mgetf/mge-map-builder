@@ -30,9 +30,17 @@ jobs:
       - name: Build
         run: bun run build:stable
 
+      - name: Find installer
+        id: installer
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path build -Recurse -Filter "*.zip" | Select-Object -First 1
+          echo "Found: $($zip.FullName)"
+          echo "path=$($zip.FullName)" >> $env:GITHUB_OUTPUT
+          echo "name=$($zip.Name)" >> $env:GITHUB_OUTPUT
+
       - name: Upload installer
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            build/stable-win-x64/*-Setup*.zip
+          files: ${{ steps.installer.outputs.path }}
           generate_release_notes: true
