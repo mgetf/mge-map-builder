@@ -9,6 +9,7 @@ out/
 
 # Electrobun
 .electrobun/
+artifacts/
 
 # Environment variables
 .env

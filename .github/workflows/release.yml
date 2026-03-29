@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Work around Electrobun rcedit hardcoded path
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "D:\a\electrobun\electrobun\package\node_modules\rcedit\bin" -Force
+          Copy-Item "node_modules\rcedit\bin\rcedit-x64.exe" "D:\a\electrobun\electrobun\package\node_modules\rcedit\bin\rcedit-x64.exe"
+
+      - name: Build
+        run: bun run build:stable
+
+      - name: Upload installer
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/stable-win-x64/*-Setup-stable.zip
+          generate_release_notes: true
