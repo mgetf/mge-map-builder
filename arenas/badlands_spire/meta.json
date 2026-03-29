@@ -1,0 +1,28 @@
+{
+	"name": "Badlands Spire",
+	"description": "Elevated spire arena from cp_badlands for airshot practice",
+	"vmf": "area_badlands_spire.vmf",
+	"gamemode": "mge",
+	"team_size": "1v1 2v2",
+	"frag_limit": 20,
+	"allowed_classes": "soldier demoman",
+	"hp_multiplier": 1.5,
+	"early_leave_threshold": 3,
+	"infinite_ammo": false,
+	"show_hp": false,
+	"min_spawn_distance": 550,
+	"spawns": {
+		"red": [
+			"1675 2750 625 0 -90 0",
+			"2400 2100 450 0 -180 0",
+			"2350 1625 400 0 135 0",
+			"1600 2025 575 0 135 0"
+		],
+		"blu": [
+			"1980 1275 675 0 90 0",
+			"1250 2350 375 0 0 0",
+			"1450 1475 375 0 45 0",
+			"2050 2300 615 0 180 0"
+		]
+	}
+}

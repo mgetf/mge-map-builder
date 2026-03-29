@@ -1,0 +1,21 @@
+{
+	"name": "Endif",
+	"description": "Simple box arena for direct combat practice",
+	"vmf": "area_endif_open.vmf",
+	"gamemode": "endif",
+	"team_size": "1v1",
+	"frag_limit": 5,
+	"countdown_seconds": 0,
+	"allowed_classes": "soldier demoman",
+	"hp_multiplier": 1.0,
+	"early_leave_threshold": 0,
+	"infinite_ammo": true,
+	"show_hp": false,
+	"min_spawn_distance": 100,
+	"spawns": [
+		"625 175 0 0 90 0",
+		"625 1050 0 0 -90 0",
+		"175 650 0 0 0 0",
+		"1025 650 0 0 180 0"
+	]
+}

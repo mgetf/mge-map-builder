@@ -1,0 +1,26 @@
+{
+	"name": "Granary Middle",
+	"description": "Mid-fight arena from cp_granary with balanced sightlines",
+	"vmf": "area_granary_pro_mid.vmf",
+	"gamemode": "mge",
+	"team_size": "1v1 2v2",
+	"frag_limit": 20,
+	"allowed_classes": "scout soldier pyro demoman heavy engineer medic sniper spy",
+	"hp_multiplier": 1.25,
+	"early_leave_threshold": 3,
+	"infinite_ammo": false,
+	"show_hp": false,
+	"min_spawn_distance": 550,
+	"spawns": {
+		"red": [
+			"1575 900 425 0 0 0",
+			"2580 900 425 0 180 0",
+			"2700 2000 425 0 180 0"
+		],
+		"blu": [
+			"1575 2000 425 0 0 0",
+			"1275 1550 425 0 0 0",
+			"2950 1375 425 0 180 0"
+		]
+	}
+}

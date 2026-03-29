@@ -1,0 +1,31 @@
+{
+	"name": "Badlands Middle",
+	"description": "Classic mid-fight arena from cp_badlands with train boxes",
+	"vmf": "area_badlands_mid.vmf",
+	"gamemode": "mge",
+	"team_size": "2v2 1v1",
+	"frag_limit": 20,
+	"cap_limit": 3,
+	"allowed_classes": "scout soldier demoman",
+	"hp_multiplier": 1.25,
+	"early_leave_threshold": 3,
+	"infinite_ammo": false,
+	"show_hp": false,
+	"min_spawn_distance": 550,
+	"spawns": {
+		"red": [
+			"1850 500 750 0 90 0",
+			"1700 900 750 0 90 0",
+			"2000 900 750 0 90 0",
+			"2200 800 750 0 135 0",
+			"2700 1500 750 0 180 0"
+		],
+		"blu": [
+			"1850 2300 750 0 -90 0",
+			"1700 1900 750 0 -90 0",
+			"2000 1900 750 0 -90 0",
+			"1450 2000 750 0 -45 0",
+			"1000 1350 750 0 0 0"
+		]
+	}
+}

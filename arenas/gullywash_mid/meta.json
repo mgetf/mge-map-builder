@@ -1,0 +1,30 @@
+{
+	"name": "Gullywash Middle",
+	"description": "Mid-fight arena from cp_gullywash with shipping containers",
+	"vmf": "area_gullywash_mid.vmf",
+	"gamemode": "mge",
+	"team_size": "1v1 2v2",
+	"frag_limit": 20,
+	"allowed_classes": "scout soldier pyro demoman heavy engineer medic sniper spy",
+	"hp_multiplier": 1.25,
+	"early_leave_threshold": 3,
+	"infinite_ammo": false,
+	"show_hp": false,
+	"min_spawn_distance": 550,
+	"spawns": {
+		"red": [
+			"1610 433 425 0 90 0",
+			"1175 428 425 0 90 0",
+			"2256 1140 300 0 180 0",
+			"1393 448 475 0 90 0",
+			"642 740 275 0 90 0"
+		],
+		"blu": [
+			"1139 1801 425 0 -90 0",
+			"603 1109 300 0 0 0",
+			"2139 1481 300 0 -90 0",
+			"1618 1754 425 0 -90 0",
+			"1369 1794 475 0 -90 0"
+		]
+	}
+}
