@@ -37,14 +37,16 @@
 	}
 
 	async function handleSelectOutputDir() {
-		const dir = await api.selectFolder({});
+		const dir = await api.selectFolder({}, { maxRequestTime: Infinity });
 		if (dir) setOutputDir(dir);
 	}
 
 	async function handleBuild() {
 		startBuild();
 		onNavigate("build");
-		const result = await api.build(toBuildConfig());
+		const result = await api.build(toBuildConfig(), {
+			maxRequestTime: Infinity,
+		});
 		finishBuild(result);
 	}
 

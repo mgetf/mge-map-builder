@@ -14,12 +14,15 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
 		"moduleResolution": "bundler",
-		"baseUrl": ".",
 		"paths": {
 			"$lib": ["./src/mainview/lib"],
-			"$lib/*": ["./src/mainview/lib/*"]
+			"$lib/*": ["./src/mainview/lib/*"],
+			"electrobun": ["./.hutch/devkit/api/sdks/main/index.ts"],
+			"electrobun/main": ["./.hutch/devkit/api/sdks/main/index.ts"],
+			"electrobun/bun": ["./.hutch/devkit/api/sdks/main/index.ts"],
+			"electrobun/view": ["./.hutch/devkit/api/browser/index.ts"]
 		}
 	},
-	"include": ["src"],
+	"include": ["src", "electrobun.config.ts", "hutch.config.ts", "vite.config.ts"],
 	"exclude": ["node_modules", "dist", "build", "../../package/dist"]
 }

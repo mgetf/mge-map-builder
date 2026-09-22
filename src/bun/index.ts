@@ -2,7 +2,11 @@ import { BrowserView, BrowserWindow, Updater, Utils } from "electrobun/bun";
 import path from "node:path";
 import fs from "node:fs";
 import type { AppRPC } from "../shared/rpc.js";
-import type { ArenaPackage } from "../shared/types.js";
+import type {
+	ArenaPackage,
+	BuildResult,
+	CompileProgress,
+} from "../shared/types.js";
 import { loadArenas } from "./services/arenas.js";
 import { findTF2, setTF2Path, getTF2Paths } from "./services/tf2.js";
 import { layoutArenas } from "./services/layout.js";
@@ -31,8 +35,9 @@ async function getMainViewUrl(): Promise<string> {
 
 function getArenasDir(): string {
 	const candidates = [
+		path.resolve(path.dirname(process.execPath), "../Resources/app/arenas"),
 		path.resolve(process.cwd(), "../Resources/app/arenas"),
-		path.resolve(process.cwd(), "../Resources/arenas"),
+		path.resolve(process.cwd(), "Resources/app/arenas"),
 		path.resolve(process.cwd(), "arenas"),
 	];
 	for (const c of candidates) {
@@ -51,9 +56,18 @@ function getBuildDir(): string {
 
 const arenasDir = getArenasDir();
 
-// mainWindow is declared here so build's onProgress callback can reference it.
-// It is assigned after BrowserWindow is created below.
 let mainWindow: BrowserWindow | null = null;
+
+function viewEvents() {
+	return mainWindow?.webview.rpc as
+		| {
+				send: {
+					buildProgress: (progress: CompileProgress) => void;
+					buildComplete: (result: BuildResult) => void;
+				};
+		  }
+		| undefined;
+}
 
 const rpc = BrowserView.defineRPC<AppRPC>({
 	handlers: {
@@ -77,6 +91,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 			selectFolder: async () => {
 				const result = await Utils.openFileDialog({
+					startingFolder: process.env.USERPROFILE || "C:\\",
 					canChooseFiles: false,
 					canChooseDirectory: true,
 					allowsMultipleSelection: false,
@@ -141,7 +156,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 						fastMode: config.fastMode,
 						arenas: placedArenas,
 						onProgress: (progress) => {
-							mainWindow?.webview.rpc.send.buildProgress(progress);
+							viewEvents()?.send.buildProgress(progress);
 						},
 					});
 
@@ -160,7 +175,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 						};
 					}
 
-					mainWindow?.webview.rpc.send.buildComplete(finalResult);
+					viewEvents()?.send.buildComplete(finalResult);
 					return finalResult;
 				} catch (err) {
 					const errorResult = {
@@ -172,7 +187,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 								? err.message
 								: "Unknown build error",
 					} as const;
-					mainWindow?.webview.rpc.send.buildComplete(errorResult);
+					viewEvents()?.send.buildComplete(errorResult);
 					return errorResult;
 				}
 			},
@@ -242,9 +257,13 @@ mainWindow = new BrowserWindow({
 // Nudging the window size after DOM ready forces a correct layout pass.
 mainWindow.webview.on("dom-ready", () => {
 	if (!mainWindow) return;
-	const { width, height } = mainWindow.getSize();
-	mainWindow.setSize(width, height + 1);
-	setTimeout(() => mainWindow?.setSize(width, height), 50);
+	try {
+		const { width, height } = mainWindow.getSize();
+		mainWindow.setSize(width, height + 1);
+		setTimeout(() => mainWindow?.setSize(width, height), 50);
+	} catch (err) {
+		console.error("Failed to refresh window size:", err);
+	}
 });
 
 console.log("MGE Map Builder started!");

@@ -7,6 +7,10 @@ export default {
 		version: "0.1.0",
 	},
 	build: {
+		mainProcess: "bun",
+		bun: {
+			entrypoint: "src/bun/index.ts",
+		},
 		// Vite builds to dist/, we copy from there
 		copy: {
 			"dist/index.html": "views/mainview/index.html",

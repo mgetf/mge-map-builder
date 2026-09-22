@@ -20,7 +20,10 @@
 		browseError = null;
 		browsing = true;
 		try {
-			const selectedPath = await api.selectFolder({});
+			const selectedPath = await api.selectFolder(
+				{},
+				{ maxRequestTime: Infinity },
+			);
 			if (selectedPath) {
 				const valid = await setManualTF2Path(selectedPath);
 				if (!valid) {
