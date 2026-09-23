@@ -1,21 +1,46 @@
 <script lang="ts">
 	import ArenaCard from "$lib/components/ArenaCard.svelte";
-	import { getArenasState } from "$lib/stores/arenas.svelte.js";
+	import { Button } from "$lib/components/ui/button/index.js";
+	import { getArenasState, importArena } from "$lib/stores/arenas.svelte.js";
 	import { getBuildState } from "$lib/stores/build.svelte.js";
 
 	let { onNavigate }: { onNavigate: (view: "arenas" | "config") => void } = $props();
 
 	const arenasState = getArenasState();
 	const build = getBuildState();
+
+	let importing = $state(false);
+	let importError = $state<string | null>(null);
+
+	async function handleImport() {
+		importError = null;
+		importing = true;
+		try {
+			importError = await importArena();
+		} catch (err) {
+			importError = "Failed to import arena.";
+			console.error(err);
+		} finally {
+			importing = false;
+		}
+	}
 </script>
 
 <div>
 	<!-- Header -->
-	<div class="border-b border-border px-6 py-4">
-		<h2 class="text-lg font-semibold text-foreground">Select Arenas</h2>
-		<p class="text-sm text-muted-foreground mt-0.5">
-			Choose which arenas to include in your map and how many instances of each.
-		</p>
+	<div class="border-b border-border px-6 py-4 flex items-start justify-between gap-4">
+		<div>
+			<h2 class="text-lg font-semibold text-foreground">Select Arenas</h2>
+			<p class="text-sm text-muted-foreground mt-0.5">
+				Choose which arenas to include in your map and how many instances of each.
+			</p>
+			{#if importError}
+				<p class="text-sm text-destructive mt-2">{importError}</p>
+			{/if}
+		</div>
+		<Button variant="outline" disabled={importing} onclick={handleImport}>
+			{importing ? "Importing..." : "Import arena..."}
+		</Button>
 	</div>
 
 	<!-- Grid -->
@@ -29,7 +54,7 @@
 			</div>
 		{:else if arenasState.arenas.length === 0}
 			<div class="flex items-center justify-center h-48 text-muted-foreground">
-				<p class="text-sm">No arenas found.</p>
+				<p class="text-sm">No arenas found. Import a folder that contains meta.json and a VMF.</p>
 			</div>
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

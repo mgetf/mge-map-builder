@@ -1,5 +1,11 @@
 import type { RPCSchema } from "electrobun/bun";
-import type { ArenaPackage, BuildConfig, BuildResult, CompileProgress } from "./types.js";
+import type {
+	ArenaPackage,
+	BuildConfig,
+	BuildResult,
+	CompileProgress,
+	ImportArenaResult,
+} from "./types.js";
 
 export type AppRPC = {
 	bun: RPCSchema<{
@@ -7,6 +13,8 @@ export type AppRPC = {
 			detectTF2: { params: {}; response: string | null };
 			setTF2Path: { params: { path: string }; response: boolean };
 			getArenas: { params: {}; response: ArenaPackage[] };
+			importArena: { params: {}; response: ImportArenaResult };
+			removeImportedArena: { params: { id: string }; response: boolean };
 			selectFolder: { params: {}; response: string | null };
 			build: { params: BuildConfig; response: BuildResult };
 			cancelBuild: { params: {}; response: void };

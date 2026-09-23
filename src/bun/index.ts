@@ -7,7 +7,11 @@ import type {
 	BuildResult,
 	CompileProgress,
 } from "../shared/types.js";
-import { loadArenas } from "./services/arenas.js";
+import {
+	deleteImportedArena,
+	importArenaFolder,
+	loadArenas,
+} from "./services/arenas.js";
 import { findTF2, setTF2Path, getTF2Paths } from "./services/tf2.js";
 import { layoutArenas } from "./services/layout.js";
 import { generateVMF } from "./services/vmf.js";
@@ -56,6 +60,21 @@ function getBuildDir(): string {
 
 const arenasDir = getArenasDir();
 
+function getUserArenasDir(): string {
+	return path.join(Utils.paths.appData, "MGE Map Builder", "arenas");
+}
+
+function listAllArenas() {
+	const bundled = fs.existsSync(arenasDir) ? loadArenas(arenasDir, false) : [];
+	const userDir = getUserArenasDir();
+	const imported = fs.existsSync(userDir) ? loadArenas(userDir, true) : [];
+	const bundledIds = new Set(bundled.map((arena) => arena.id));
+	return [
+		...bundled,
+		...imported.filter((arena) => !bundledIds.has(arena.id)),
+	];
+}
+
 let mainWindow: BrowserWindow | null = null;
 
 function viewEvents() {
@@ -82,11 +101,39 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 			getArenas: () => {
 				try {
-					return loadArenas(arenasDir);
+					return listAllArenas();
 				} catch (err) {
 					console.error("[RPC] Failed to load arenas:", err);
 					return [];
 				}
+			},
+
+			importArena: async () => {
+				const result = await Utils.openFileDialog({
+					startingFolder: process.env.USERPROFILE || "C:\\",
+					canChooseFiles: false,
+					canChooseDirectory: true,
+					allowsMultipleSelection: false,
+				});
+				const sourceDir = result?.[0];
+				if (!sourceDir) {
+					return { cancelled: true, error: null, arena: null };
+				}
+
+				const existingIds = new Set(listAllArenas().map((arena) => arena.id));
+				const imported = importArenaFolder(
+					sourceDir,
+					getUserArenasDir(),
+					existingIds,
+				);
+				if ("error" in imported) {
+					return { cancelled: false, error: imported.error, arena: null };
+				}
+				return { cancelled: false, error: null, arena: imported.arena };
+			},
+
+			removeImportedArena: ({ id }) => {
+				return deleteImportedArena(id, getUserArenasDir());
 			},
 
 			selectFolder: async () => {
@@ -115,7 +162,7 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 
 				try {
 					// 1. Load all arenas and resolve the selected ones
-					const allArenas = loadArenas(arenasDir);
+					const allArenas = listAllArenas();
 					const selectedEntries = config.arenas
 						.map((entry) => {
 							const arena = allArenas.find(

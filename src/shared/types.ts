@@ -55,6 +55,13 @@ export interface ArenaPackage {
 	assetsDir: string | null; // absolute path to assets/ or null
 	hasCustomAssets: boolean;
 	bounds: ArenaBounds; // measured from VMF
+	imported: boolean;
+}
+
+export interface ImportArenaResult {
+	cancelled: boolean;
+	error: string | null;
+	arena: ArenaPackage | null;
 }
 
 export interface ArenaBounds {

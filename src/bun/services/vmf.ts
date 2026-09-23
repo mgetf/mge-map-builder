@@ -3,6 +3,22 @@ import path from "node:path";
 import type { BuildConfig, PlacedArena } from "../types.js";
 import { serializeKV } from "./keyvalues.js";
 
+function prefixEntityNames(vmfText: string, prefix: string): string {
+	const names = new Set<string>();
+	for (const match of vmfText.matchAll(/"targetname"\s+"([^"]+)"/g)) {
+		if (match[1].length > 0 && !match[1].startsWith("!")) names.add(match[1]);
+	}
+
+	let text = vmfText;
+	const ordered = [...names].sort((a, b) => b.length - a.length);
+	for (const name of ordered) {
+		const prefixed = `${prefix}${name}`;
+		text = text.split(`"${name}"`).join(`"${prefixed}"`);
+		text = text.split(`"${name},`).join(`"${prefixed},`);
+	}
+	return text;
+}
+
 export function generateVMF(
 	config: BuildConfig,
 	placedArenas: PlacedArena[],
@@ -31,17 +47,26 @@ export function generateVMF(
 	// Entity array — func_instance per arena + light_environment
 	const entities: Record<string, unknown>[] = [];
 
-	for (const placed of placedArenas) {
-		const relPath = path
-			.relative(outputDir, placed.arena.vmfPath)
-			.replace(/\\/g, "/");
+	const instanceDir = path.join(outputDir, "instances");
+	fs.mkdirSync(instanceDir, { recursive: true });
+
+	placedArenas.forEach((placed, index) => {
+		const prefix = `a${index + 1}_`;
+		const source = fs.readFileSync(placed.arena.vmfPath, "utf8");
+		const fileName = `${prefix}${placed.arena.id}.vmf`;
+		fs.writeFileSync(
+			path.join(instanceDir, fileName),
+			prefixEntityNames(source, prefix),
+			"utf8",
+		);
 
 		entities.push({
 			id: entityId++,
 			classname: "func_instance",
 			angles: "0 0 0",
-			file: relPath,
-			fixup_style: 0,
+			file: `instances/${fileName}`,
+			// None. VBSP's prefix fixup stores "Open" behind the wrong separator, so the door never receives it.
+			fixup_style: 2,
 			targetname: "",
 			origin: placed.origin.join(" "),
 			editor: {
@@ -51,7 +76,7 @@ export function generateVMF(
 				logicalpos: "[0 0]",
 			},
 		});
-	}
+	});
 
 	// light_environment — placed at the center of the first arena's bounding box
 	// Must be inside sealed brushwork or VBSP reports a leak.

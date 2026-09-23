@@ -9,6 +9,7 @@
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { getBuildState, setArenaCount } from "$lib/stores/build.svelte.js";
+	import { removeImportedArena } from "$lib/stores/arenas.svelte.js";
 
 	let { arena }: { arena: ArenaPackage } = $props();
 
@@ -16,6 +17,18 @@
 
 	const count = $derived(build.selectedArenas.get(arena.id) ?? 0);
 	const isSelected = $derived(count > 0);
+
+	let removing = $state(false);
+
+	async function handleRemove() {
+		if (!confirm(`Remove "${arena.meta.name}"?`)) return;
+		removing = true;
+		try {
+			await removeImportedArena(arena.id);
+		} finally {
+			removing = false;
+		}
+	}
 
 	function increment() {
 		setArenaCount(arena.id, count + 1);
@@ -75,9 +88,14 @@
 					{arena.meta.description}
 				</p>
 			</div>
-			<Badge variant={gamemodeColors[arena.meta.gamemode] ?? "outline"} class="shrink-0 text-[10px]">
-				{arena.meta.gamemode.toUpperCase()}
-			</Badge>
+			<div class="flex shrink-0 flex-col items-end gap-1">
+				<Badge variant={gamemodeColors[arena.meta.gamemode] ?? "outline"} class="text-[10px]">
+					{arena.meta.gamemode.toUpperCase()}
+				</Badge>
+				{#if arena.imported}
+					<Badge variant="secondary" class="text-[10px]">Imported</Badge>
+				{/if}
+			</div>
 		</div>
 	</CardHeader>
 
@@ -123,10 +141,21 @@
 			</Button>
 		</div>
 
-		{#if isSelected}
-			<span class="text-xs font-medium text-primary">
-				{count} instance{count !== 1 ? "s" : ""}
-			</span>
-		{/if}
+		<div class="flex items-center gap-3">
+			{#if arena.imported}
+				<button
+					class="text-xs text-muted-foreground hover:text-destructive disabled:opacity-50"
+					disabled={removing}
+					onclick={handleRemove}
+				>
+					{removing ? "Removing..." : "Remove"}
+				</button>
+			{/if}
+			{#if isSelected}
+				<span class="text-xs font-medium text-primary">
+					{count} instance{count !== 1 ? "s" : ""}
+				</span>
+			{/if}
+		</div>
 	</CardFooter>
 </Card>

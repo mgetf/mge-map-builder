@@ -104,6 +104,123 @@ function runStage(
 	});
 }
 
+const MODEL_SIDECAR_EXTS = [
+	".mdl",
+	".vvd",
+	".dx90.vtx",
+	".dx80.vtx",
+	".sw.vtx",
+	".phy",
+];
+
+const VMT_TEXTURE_KEYS = new Set([
+	"basetexture",
+	"basetexture2",
+	"bumpmap",
+	"normalmap",
+	"detail",
+	"phongexponenttexture",
+	"lightwarptexture",
+	"envmapmask",
+	"selfillummask",
+	"texture2",
+	"blendmodulatetexture",
+	"ambientoccltexture",
+]);
+
+function readCString(buf: Buffer, offset: number): string {
+	if (offset < 0 || offset >= buf.length) return "";
+	const end = buf.indexOf(0, offset);
+	if (end < 0) return "";
+	return buf.toString("utf8", offset, end);
+}
+
+/** Material VMTs named by a studio model's texture and cdmaterials tables. */
+function modelMaterialPaths(mdlPath: string): string[] {
+	const buf = fs.readFileSync(mdlPath);
+	if (buf.length < 220 || buf.toString("utf8", 0, 4) !== "IDST") return [];
+
+	const numtextures = buf.readInt32LE(204);
+	const textureindex = buf.readInt32LE(208);
+	const numcdtextures = buf.readInt32LE(212);
+	const cdtextureindex = buf.readInt32LE(216);
+	if (
+		numtextures < 1 ||
+		numtextures > 256 ||
+		numcdtextures < 1 ||
+		numcdtextures > 32 ||
+		textureindex < 0 ||
+		cdtextureindex < 0
+	) {
+		return [];
+	}
+
+	const cdpaths: string[] = [];
+	for (let i = 0; i < numcdtextures; i++) {
+		const entry = cdtextureindex + i * 4;
+		if (entry + 4 > buf.length) break;
+		const dir = readCString(buf, buf.readInt32LE(entry))
+			.replace(/\\/g, "/")
+			.replace(/^\/+|\/+$/g, "");
+		if (dir.length > 0 && !dir.includes("..")) cdpaths.push(dir);
+	}
+
+	const paths: string[] = [];
+	for (let i = 0; i < numtextures; i++) {
+		const tex = textureindex + i * 64;
+		if (tex + 4 > buf.length) break;
+		const name = readCString(buf, tex + buf.readInt32LE(tex)).replace(
+			/\\/g,
+			"/",
+		);
+		if (name.length === 0 || name.includes("..") || name.includes("/")) continue;
+		for (const dir of cdpaths) {
+			paths.push(`materials/${dir}/${name}.vmt`);
+		}
+	}
+	return paths;
+}
+
+function addPackFile(
+	pairs: [string, string][],
+	seen: Set<string>,
+	internalPath: string,
+	diskPath: string,
+): void {
+	const internal = internalPath.replace(/\\/g, "/");
+	if (seen.has(internal) || !fs.existsSync(diskPath)) return;
+	seen.add(internal);
+	pairs.push([internal, diskPath]);
+}
+
+function addMaterialTree(
+	pairs: [string, string][],
+	seen: Set<string>,
+	assetsDir: string,
+	internalVmt: string,
+	depth: number,
+): void {
+	if (depth > 4 || seen.has(internalVmt)) return;
+	const diskVmt = path.join(assetsDir, internalVmt);
+	if (!fs.existsSync(diskVmt)) return;
+	addPackFile(pairs, seen, internalVmt, diskVmt);
+
+	const text = fs.readFileSync(diskVmt, "utf8");
+	const re = /\$([A-Za-z0-9]+)"?\s+"([^"]+)"/g;
+	let match: RegExpExecArray | null;
+	while ((match = re.exec(text)) !== null) {
+		if (!VMT_TEXTURE_KEYS.has(match[1].toLowerCase())) continue;
+		const tex = match[2].replace(/\\/g, "/").replace(/^\/+/, "");
+		if (tex.length === 0 || tex.includes("..") || tex === "env_cubemap") continue;
+		const vtf = `materials/${tex}.vtf`;
+		addPackFile(pairs, seen, vtf, path.join(assetsDir, vtf));
+		const nested = `materials/${tex}.vmt`;
+		if (nested !== internalVmt) {
+			addMaterialTree(pairs, seen, assetsDir, nested, depth + 1);
+		}
+	}
+}
+
 /**
  * Scan arena VMFs for custom model references and build a bspzip file list.
  * Returns the path to the file list, or null if no custom assets.
@@ -113,63 +230,58 @@ function buildPackList(
 	buildDir: string,
 ): string | null {
 	const filePairs: [string, string][] = [];
-	const modelExts = [".mdl", ".vvd", ".dx90.vtx", ".dx80.vtx", ".sw.vtx", ".phy"];
+	const seen = new Set<string>();
 
 	for (const placed of arenas) {
 		if (!placed.arena.hasCustomAssets || !placed.arena.assetsDir) continue;
+		const assetsDir = placed.arena.assetsDir;
 
 		const vmfContent = fs.readFileSync(placed.arena.vmfPath, "utf8");
 		const modelMatches = vmfContent.matchAll(/"model"\s+"([^"]+)"/g);
 
 		for (const m of modelMatches) {
 			const ref = m[1].replace(/\\/g, "/");
-			const baseName = ref.replace(/\.mdl$/, "");
+			if (!ref.toLowerCase().endsWith(".mdl")) continue;
+			const baseName = ref.slice(0, -4);
 
-			for (const ext of modelExts) {
+			for (const ext of MODEL_SIDECAR_EXTS) {
 				const internalPath = baseName + ext;
-				const diskPath = path.join(
-					placed.arena.assetsDir,
+				addPackFile(
+					filePairs,
+					seen,
 					internalPath,
+					path.join(assetsDir, internalPath),
 				);
-				if (fs.existsSync(diskPath)) {
-					filePairs.push([internalPath, diskPath]);
-				}
 			}
 
-			// Associated materials
-			const matDir = path.join(
-				placed.arena.assetsDir,
-				"materials",
-				baseName.replace(/^models\//, "models/"),
-			);
-			if (fs.existsSync(matDir) && fs.statSync(matDir).isDirectory()) {
-				for (const f of fs.readdirSync(matDir)) {
-					const internalPath = path
-						.join(
-							"materials",
-							baseName.replace(/^models\//, "models/"),
-							f,
-						)
-						.replace(/\\/g, "/");
-					filePairs.push([internalPath, path.join(matDir, f)]);
-				}
+			const mdlDisk = path.join(assetsDir, `${baseName}.mdl`);
+			if (!fs.existsSync(mdlDisk)) continue;
+			for (const vmt of modelMaterialPaths(mdlDisk)) {
+				addMaterialTree(filePairs, seen, assetsDir, vmt, 0);
 			}
+		}
+
+		const materialMatches = vmfContent.matchAll(/"material"\s+"([^"]+)"/gi);
+		for (const m of materialMatches) {
+			const name = m[1].replace(/\\/g, "/").replace(/^\/+/, "");
+			if (name.length === 0 || name.includes("..")) continue;
+			const internalVmt = `materials/${name}.vmt`.toLowerCase();
+			addMaterialTree(filePairs, seen, assetsDir, internalVmt, 0);
+			addMaterialTree(
+				filePairs,
+				seen,
+				assetsDir,
+				internalVmt.replace(/\.vmt$/, "_cheap.vmt"),
+				0,
+			);
 		}
 	}
 
 	if (filePairs.length === 0) return null;
 
-	// De-duplicate
-	const seen = new Set<string>();
-	const unique = filePairs.filter(([internal]) => {
-		if (seen.has(internal)) return false;
-		seen.add(internal);
-		return true;
-	});
-
 	const fileListPath = path.join(buildDir, "_packlist.txt");
 	const content =
-		unique.map(([internal, disk]) => `${internal}\n${disk}`).join("\n") +
+		filePairs.map(([internal, disk]) => `${internal}\n${disk}`).join("\n") +
 		"\n";
 	fs.writeFileSync(fileListPath, content, "utf8");
 

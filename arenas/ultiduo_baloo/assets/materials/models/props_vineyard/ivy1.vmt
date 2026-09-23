@@ -1,0 +1,11 @@
+"VertexlitGeneric"
+{
+	$basetexture "models/props_vineyard/ivy1"
+	
+	//"$translucent" "1"
+	"$alphatest" "1"
+	"$AlphaTestReference" "0.85"
+	"$AllowAlphaToCoverage" "1"
+	
+	"$nocull"	1
+}
