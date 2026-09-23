@@ -76,7 +76,9 @@ Each arena is a self-contained folder:
 badlands_mid/
   area_badlands_mid.vmf     Arena geometry
   meta.json                 Name, description, spawn positions
-  assets/                   Custom models/materials (if any)
+  assets/                   Custom models and materials, if any
 ```
+
+Paths inside `assets/` match paths inside `tf/` (`models/...`, `materials/...`). The compiler packs the models and brush materials the VMF references. `meta.json` does not list them.
 
 See [`docs/ARENA_GUIDELINES.md`](docs/ARENA_GUIDELINES.md) for authoring details.

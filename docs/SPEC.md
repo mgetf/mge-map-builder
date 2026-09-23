@@ -177,12 +177,10 @@ There are three categories of assets an arena VMF may reference:
 
 ### Asset Pipeline at Compile Time
 
-1. Custom assets live in each arena's `assets/` folder (shipped with the arena package)
-2. Before VBSP runs, assets are made discoverable — either:
-   - Temporarily copied into the user's `tf/` directory, or
-   - (Preferred) A custom `gameinfo.txt` search path is configured so VBSP searches both `tf/` and the app's asset directory
-3. After VRAD completes, the compile pipeline scans all VMFs for custom asset references, finds matching files, and packs them into the BSP via `bspzip -addlist`
-4. The final BSP is fully self-contained — anyone loading the map gets the custom assets from the BSP's embedded pak lump
+1. Custom assets live in each arena's `assets/` folder, using the same relative paths as `tf/` (`models/...`, `materials/...`). `meta.json` does not list them.
+2. Before VBSP runs, those files are copied into the TF2 `tf/` directory so the compile tools can resolve them, and removed afterwards.
+3. After VRAD, the pipeline scans each arena VMF for `model` and `material` references, packs the matching files from `assets/` (model sidecars, the VMTs named by the `.mdl`, brush materials, and a `*_cheap.vmt` sibling when present), and adds them with `bspzip -addlist`.
+4. The final BSP is fully self-contained. Anyone loading the map gets the custom assets from the BSP's embedded pak lump.
 
 ---
 
@@ -192,7 +190,7 @@ There are three categories of assets an arena VMF may reference:
 
 The master VMF is assembled from:
 - **Worldspawn properties** — skybox name, detail sprites, map message
-- **`func_instance` entities** — one per arena, pointing at the arena's VMF file with an origin offset
+- **`func_instance` entities** — one per arena. Each copy is written under `instances/` with that copy's prefix on every targetname (`a1_`, `a2_`), and `fixup_style` set to None. VBSP's own prefix fixup stores the input name behind the wrong separator, so door outputs never fire.
 - **`light_environment` entity** — injected automatically (see Key Technical Decisions)
 
 Instance file paths are written relative to the VMF output location so VBSP can resolve them.

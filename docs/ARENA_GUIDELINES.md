@@ -102,6 +102,22 @@ Any brush that isn't structural (doesn't seal the map or block visibility) shoul
 
 Your arena must be sealed — this means a ceiling or sky brush on top. Use `tools/toolsskybox` for open-air arenas. Make sure the skybox brush fully encloses the playable space with no gaps, including above any tall props or jump peaks.
 
+### Leave Entity Names Unprefixed
+
+Doors, triggers, and filters should use ordinary targetnames and comma-separated outputs (`red_shutter,Open,,0,-1`).
+
+The builder copies each placed arena, prefixes every targetname itself (`a1_red_shutter`, `a2_red_shutter`), and updates outputs that fire those names. It tells VBSP not to apply instance name fixup. VBSP's own prefix stores the input name behind the wrong separator, so the trigger fires and the door never receives `Open`.
+
+### Props without a Physics Mesh
+
+`prop_static` with `solid` set to VPhysics (`6`) and a model that has no `.phy` prints this once per copy:
+
+```
+SOLID_VPHYSICS static prop with no vphysics model
+```
+
+The prop still draws. Set `solid` to bounding box (`2`) or not solid (`0`) when the model has no `.phy`.
+
 ### Keep the Arena Self-Contained
 
 Your arena should be a complete, isolated unit. It should not depend on:
@@ -119,18 +135,30 @@ Think of it as a building block that gets placed at an arbitrary position in a l
 
 If your arena requires custom models or materials:
 
-1. **Use a unique prefix** for all custom content paths (e.g., `models/mymgearena/`, `materials/mymgearena/`). This prevents naming collisions with other arenas or game content.
+1. **Use a unique prefix** for all custom content paths (e.g., `models/mymgearena/`, `materials/mymgearena/`). This prevents naming collisions with other arenas or game content. The path in the VMF and the path under `assets/` must be the same string.
 
-2. **Bundle all required files** alongside the VMF:
-   - Models: `.mdl`, `.vvd`, `.vtx` variants (`.dx90.vtx`, `.dx80.vtx`, `.sw.vtx`), `.phy`
-   - Materials: `.vmt` files
-   - Textures: `.vtf` files referenced by the VMTs
+2. **Bundle the files under `assets/`, using `tf/` paths.** The compiler does not read an asset list from `meta.json`. It scans the VMF for `model` and `material` keys and packs a file only when that exact path exists under `assets/`.
 
-3. **Document dependencies** in your arena metadata — list every custom asset path so the build tool knows what to pack.
+```
+ultiduo_baloo/
+  area_ultiduo_baloo.vmf
+  meta.json
+  assets/
+    models/jungle/bushcluster02a.mdl
+    models/jungle/bushcluster02a.vvd
+    models/jungle/bushcluster02a.dx90.vtx
+    materials/jungle/bushes01.vmt
+    materials/jungle/bushes01.vtf
+    materials/jungle/blendgroundtograss_jungle.vmt
+```
 
-4. **Prefer referencing stock TF2 textures in your VMTs**. If your custom model's material uses `$basetexture` pointing to a stock TF2 texture (e.g., `metal/metalwall048a`), no VTF needs bundling. Only bundle VTFs for truly custom textures.
+Next to each `.mdl`, include `.vvd`, `.dx90.vtx`, `.dx80.vtx`, `.sw.vtx`, and `.phy` when the model has one.
 
-5. **Do NOT reference assets from other community maps** (e.g., `kalinka/`, `onsen/`, `pl_temple/` prefixed materials). These are not available in stock TF2 and would need extraction from the original map's BSP — a legal and logistical headache. Recreate the look using stock TF2 materials or create your own.
+Brush materials count. A missing `materials/jungle/blendgroundtograss_jungle.vmt` still compiles. In game the client spams `CMaterial::PrecacheVars: error loading vmt file` every frame, and the surface draws with no shader. If `$basetexture` points at a stock texture, ship the VMT only. If the texture is custom, ship the VTF too. Ship a sibling `*_cheap.vmt` when you have one.
+
+3. **Prefer referencing stock TF2 textures in your VMTs**. If your custom model's material uses `$basetexture` pointing to a stock TF2 texture (e.g., `metal/metalwall048a`), no VTF needs bundling. Only bundle VTFs for truly custom textures.
+
+4. **Do NOT reference assets from other community maps** (e.g., `kalinka/`, `onsen/`, `pl_temple/`, `jungle/`, `props_vineyard/` from a decompiled map). These are not in stock TF2. Recreate the look with stock materials, or extract the files from the original BSP and place them under `assets/` at the same path the VMF already uses. Renaming the path means editing every reference in the VMF.
 
 ### Existing Problem Arenas
 
@@ -164,7 +192,7 @@ Before submitting an arena, verify:
 
 6. **Measure your bounding box** — Check the min/max coordinates of your brush geometry. Ideally the arena fits within ~5000x5000 units in X/Y. Larger arenas eat more coordinate space and limit how many can fit in one map.
 
-7. **Check custom asset references** — Grep for any non-stock material/model paths. Document them or replace with stock equivalents.
+7. **Check custom asset references** — Grep for any non-stock material or model path. Each one needs a file at that same path under `assets/`.
 
 8. **Load in-game** — Verify textures render correctly, no pink checkerboards, no missing models (ERROR signs), lighting looks reasonable.
 
@@ -180,7 +208,8 @@ Before submitting an arena, verify:
 | Skybox | Use `tools/toolsskybox` ceiling | Include `sky_camera` or 3D skybox geometry |
 | Spawns | Define in arena metadata | Include `info_player_teamspawn` entities |
 | Detail | Use `func_detail` for non-structural brushes | Make everything structural |
-| Materials | Use stock TF2 materials | Reference community map textures |
+| Materials | Use stock TF2 materials | Reference community map textures without bundling them |
 | Props | Use `prop_static` for detail geometry | Build complex detail from brushes |
+| Entity names | Leave targetnames as authored | Prefix them yourself, or rely on VBSP instance fixup |
 | Complexity | Keep reasonable brush count | Use excessive displacements or micro-geometry |
 | Areaportals | Remove them | Leave orphaned areaportals |
