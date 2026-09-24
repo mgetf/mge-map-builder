@@ -4,7 +4,7 @@
 	"vmf": "area_ultiduo_baloo.vmf",
 	"gamemode": "ultiduo",
 	"team_size": "2v2",
-	"frag_limit": 1,
+	"frag_limit": 2,
 	"countdown_seconds": 0,
 	"allowed_classes": "soldier medic",
 	"hp_multiplier": 1,
@@ -13,6 +13,7 @@
 	"show_hp": false,
 	"min_spawn_distance": 550,
 	"respawn_delay": 2,
+	"koth_round_time": 300,
 	"spawns": {
 		"red": {
 			"soldier": ["-96 1472 65 0 270 0"],
