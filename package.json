@@ -4,12 +4,12 @@
 	"type": "module",
 	"description": "Build custom TF2 MGE maps from prefab arenas",
 	"scripts": {
-		"start": "vite build && electrobun dev",
+		"start": "electrobun prepare && vite build && electrobun dev",
 		"dev": "electrobun dev --watch",
 		"dev:hmr": "concurrently \"bun run hmr\" \"bun run start\"",
 		"hmr": "vite --port 5173",
-		"build:canary": "vite build && electrobun build --env=canary",
-		"build:stable": "vite build && electrobun build --env=stable"
+		"build:canary": "electrobun prepare --env=canary && vite build && electrobun build --env=canary",
+		"build:stable": "electrobun prepare --env=stable && vite build && electrobun build --env=stable"
 	},
 	"dependencies": {
 		"clsx": "^2.1.1",
