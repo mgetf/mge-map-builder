@@ -24,17 +24,38 @@ jobs:
       - name: Build
         run: bun run build:stable
 
-      - name: Find installer
+      - name: Package installer
         id: installer
         shell: pwsh
         run: |
-          $installer = Get-ChildItem -Path artifacts, build -Recurse -Filter "*-Setup.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $installer) { Write-Error "No Windows setup executable found"; exit 1 }
-          echo "Found: $($installer.FullName)"
-          echo "path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
+          $setup = Get-ChildItem -Path build -Recurse -Filter "*-Setup.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $setup) { Write-Error "No Windows setup executable found"; exit 1 }
+          $stem = [System.IO.Path]::GetFileNameWithoutExtension($setup.Name)
+          $include = @(Get-ChildItem -LiteralPath $setup.DirectoryName | Where-Object { $_.Name.StartsWith($stem) })
+          if ($include.Count -lt 2) {
+            Write-Error "Setup payload is missing beside $($setup.FullName)"
+            exit 1
+          }
+          $include | ForEach-Object { Write-Output "Including: $($_.FullName)" }
+          $zip = Join-Path $setup.DirectoryName "$stem.zip"
+          if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+          Compress-Archive -LiteralPath ($include.FullName) -DestinationPath $zip
+          echo "path=$zip" >> $env:GITHUB_OUTPUT
 
       - name: Upload installer
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ steps.installer.outputs.path }}
           generate_release_notes: true
+
+      - name: Remove incomplete setup executable
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag --json assets --jq ".assets[].name" | ForEach-Object {
+            if ($_ -like "*Setup.exe") {
+              & gh release delete-asset $tag $_ --yes
+            }
+          }
