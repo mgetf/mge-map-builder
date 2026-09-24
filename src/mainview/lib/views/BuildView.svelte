@@ -33,11 +33,11 @@
 		</p>
 	</div>
 
-	<!-- Content: progress or result -->
-	<div class="flex-1 min-h-0">
-		{#if build.compileStatus === "running"}
+	<div class="flex-1 min-h-0 flex flex-col">
+		{#if build.compileStatus === "running" || build.compileStatus === "done" || build.compileStatus === "error"}
 			<BuildProgress />
-		{:else if build.compileStatus === "done" || build.compileStatus === "error"}
+		{/if}
+		{#if build.compileStatus === "done" || build.compileStatus === "error"}
 			<BuildResult {onNavigate} />
 		{/if}
 	</div>

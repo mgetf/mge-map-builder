@@ -8,6 +8,7 @@ const Z_LAYER_OFFSET = 5000;
 interface LayoutEntry {
 	arena: ArenaPackage;
 	index: number; // 1-based instance number for this arena type
+	menuIndex: number;
 }
 
 export function layoutArenas(
@@ -15,9 +16,10 @@ export function layoutArenas(
 ): PlacedArena[] {
 	// Expand entries into individual instances
 	const items: LayoutEntry[] = [];
+	let menuIndex = 0;
 	for (const entry of entries) {
 		for (let i = 1; i <= entry.count; i++) {
-			items.push({ arena: entry.arena, index: i });
+			items.push({ arena: entry.arena, index: i, menuIndex: menuIndex++ });
 		}
 	}
 
@@ -122,5 +124,6 @@ function makePlaced(
 		arena: item.arena,
 		instanceName: `${item.arena.meta.name}${suffix}`,
 		origin: [ox, oy, oz],
+		menuIndex: item.menuIndex,
 	};
 }

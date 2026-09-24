@@ -386,7 +386,7 @@ export async function compile(options: CompileOptions): Promise<BuildResult> {
 		// Stage 3: VRAD
 		const vradArgs = [
 			"-both",
-			...(fastMode ? ["-fast"] : []),
+			...(fastMode ? ["-fast"] : ["-final"]),
 			"-game",
 			game,
 			bspPath,

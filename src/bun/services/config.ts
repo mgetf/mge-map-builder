@@ -168,7 +168,8 @@ export function generateConfig(
 
 	const spawnConfigs: Record<string, unknown> = {};
 
-	for (const placed of placedArenas) {
+	const menuOrder = [...placedArenas].sort((a, b) => a.menuIndex - b.menuIndex);
+	for (const placed of menuOrder) {
 		spawnConfigs[placed.instanceName] = buildArenaSection(
 			placed.arena.meta,
 			placed.origin,

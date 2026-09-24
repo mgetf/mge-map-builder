@@ -70,7 +70,11 @@
 		<div class="fixed bottom-0 right-0 left-60 border-t border-border bg-card px-6 py-3 flex items-center justify-between z-10">
 			<div class="text-sm text-muted-foreground">
 				<span class="font-semibold text-foreground">{build.totalInstances}</span>
+				<span class="text-muted-foreground">/ {build.maxArenas}</span>
 				arena instance{build.totalInstances !== 1 ? "s" : ""} selected
+				{#if build.atArenaCap}
+					<span class="ml-2 text-yellow-500">Map arena limit reached.</span>
+				{/if}
 			</div>
 			<button
 				onclick={() => onNavigate("config")}

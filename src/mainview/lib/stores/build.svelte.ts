@@ -1,9 +1,11 @@
-import type {
-	BuildConfig,
-	BuildResult,
-	CompileProgress,
-	CompileStage,
-	LightEnvironment,
+import {
+	MAX_ARENAS,
+	clampArenaCount,
+	type BuildConfig,
+	type BuildResult,
+	type CompileProgress,
+	type CompileStage,
+	type LightEnvironment,
 } from "$lib/types.js";
 
 // --- Lighting presets ---
@@ -124,6 +126,16 @@ export function getBuildState() {
 			}
 			return total;
 		},
+		get maxArenas() {
+			return MAX_ARENAS;
+		},
+		get atArenaCap() {
+			let total = 0;
+			for (const count of selectedArenas.values()) {
+				total += count;
+			}
+			return total >= MAX_ARENAS;
+		},
 		get canBuild() {
 			let total = 0;
 			for (const count of selectedArenas.values()) {
@@ -159,19 +171,42 @@ export function getBuildState() {
 	};
 }
 
-export function setArenaCount(arenaId: string, count: number) {
+function instanceTotal(map: Map<string, number>): number {
+	let total = 0;
+	for (const count of map.values()) {
+		total += count;
+	}
+	return total;
+}
+
+export function setArenaCount(arenaId: string, count: number): number {
+	const current = selectedArenas.get(arenaId) ?? 0;
+	const applied = clampArenaCount(count, current, instanceTotal(selectedArenas));
 	const next = new Map(selectedArenas);
-	if (count <= 0) {
+	if (applied <= 0) {
 		next.delete(arenaId);
 	} else {
-		next.set(arenaId, Math.min(count, 5));
+		next.set(arenaId, applied);
 	}
 	selectedArenas = next;
+	return applied;
 }
 
 export function removeArena(arenaId: string) {
 	const next = new Map(selectedArenas);
 	next.delete(arenaId);
+	selectedArenas = next;
+}
+
+export function reorderArenas(arenaIds: string[]) {
+	const next = new Map<string, number>();
+	for (const id of arenaIds) {
+		const count = selectedArenas.get(id);
+		if (count !== undefined) next.set(id, count);
+	}
+	for (const [id, count] of selectedArenas) {
+		if (!next.has(id)) next.set(id, count);
+	}
 	selectedArenas = next;
 }
 

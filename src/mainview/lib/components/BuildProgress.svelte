@@ -16,16 +16,13 @@
 	let logContainer: HTMLElement | undefined = $state();
 
 	$effect(() => {
-		// Read log length so this effect re-runs on every new line
 		void build.compileLog.length;
-		if (logContainer) {
-			// Defer to next microtask so the new DOM node is rendered first
-			Promise.resolve().then(() => {
-				if (logContainer) {
-					logContainer.scrollTop = logContainer.scrollHeight;
-				}
-			});
-		}
+		if (build.compileStatus !== "running" || !logContainer) return;
+		Promise.resolve().then(() => {
+			if (logContainer) {
+				logContainer.scrollTop = logContainer.scrollHeight;
+			}
+		});
 	});
 
 	function formatElapsed(ms: number): string {
@@ -39,7 +36,7 @@
 	}
 </script>
 
-<div class="flex flex-col h-full p-6 space-y-5">
+<div class="flex flex-1 min-h-0 flex-col p-6 space-y-5">
 	<!-- Stage pipeline -->
 	<div class="flex items-center gap-2">
 		{#each build.stageOrder as stage, i (stage)}
@@ -85,9 +82,15 @@
 		{/each}
 
 		<div class="ml-auto">
-			<Button variant="outline" size="sm" onclick={handleCancel}>
-				Cancel
-			</Button>
+			{#if build.compileStatus === "running"}
+				<Button variant="outline" size="sm" onclick={handleCancel}>
+					Cancel
+				</Button>
+			{:else if build.compileStatus === "done"}
+				<span class="text-sm font-medium text-green-400">Ready</span>
+			{:else if build.compileStatus === "error"}
+				<span class="text-sm font-medium text-destructive">Failed</span>
+			{/if}
 		</div>
 	</div>
 

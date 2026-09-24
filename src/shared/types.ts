@@ -1,3 +1,19 @@
+/** Arena slots MGEMod can load on one map. Arrays are sized MAXARENAS + 1 and index 0 is unused. */
+export const MAX_ARENAS = 63;
+
+export function clampArenaCount(
+	requested: number,
+	currentForArena: number,
+	totalInstances: number,
+): number {
+	const others = totalInstances - currentForArena;
+	const room = Math.max(0, MAX_ARENAS - others);
+	if (!Number.isFinite(requested)) return 0;
+	const whole = Math.floor(requested);
+	if (whole <= 0) return 0;
+	return Math.min(whole, room);
+}
+
 // Arena package metadata (matches meta.json schema)
 export interface ArenaMeta {
 	name: string;
@@ -81,6 +97,7 @@ export interface PlacedArena {
 	arena: ArenaPackage;
 	instanceName: string; // "Badlands Middle 1", "Badlands Middle 2", etc.
 	origin: [number, number, number];
+	menuIndex: number;
 }
 
 // Build configuration from the UI

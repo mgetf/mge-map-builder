@@ -5,13 +5,22 @@
 		class: className,
 		checked = $bindable(false),
 		disabled = false,
+		onCheckedChange,
 		...restProps
 	}: {
 		class?: string;
 		checked?: boolean;
 		disabled?: boolean;
+		onCheckedChange?: (checked: boolean) => void;
 		[key: string]: unknown;
 	} = $props();
+
+	function toggle() {
+		if (disabled) return;
+		const next = !checked;
+		checked = next;
+		onCheckedChange?.(next);
+	}
 </script>
 
 <button
@@ -24,8 +33,8 @@
 		checked ? "bg-primary" : "bg-input",
 		className,
 	)}
-	onclick={() => { if (!disabled) checked = !checked; }}
 	{...restProps}
+	onclick={toggle}
 >
 	<span
 		class={cn(

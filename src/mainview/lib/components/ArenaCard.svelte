@@ -17,6 +17,9 @@
 
 	const count = $derived(build.selectedArenas.get(arena.id) ?? 0);
 	const isSelected = $derived(count > 0);
+	const maxForArena = $derived(
+		count + Math.max(0, build.maxArenas - build.totalInstances),
+	);
 
 	let removing = $state(false);
 
@@ -30,12 +33,42 @@
 		}
 	}
 
+	let draft = $state("");
+	let editing = $state(false);
+	const shown = $derived(editing ? draft : String(count));
+
 	function increment() {
 		setArenaCount(arena.id, count + 1);
 	}
 
 	function decrement() {
 		setArenaCount(arena.id, count - 1);
+	}
+
+	function onDraftInput(event: Event) {
+		const raw = (event.currentTarget as HTMLInputElement).value;
+		if (raw === "") {
+			draft = raw;
+			return;
+		}
+		const parsed = Number.parseInt(raw, 10);
+		if (!Number.isFinite(parsed) || parsed < 0) {
+			draft = raw;
+			return;
+		}
+		const applied = setArenaCount(arena.id, parsed);
+		draft = applied === parsed ? raw : String(applied);
+	}
+
+	function commitDraft() {
+		editing = false;
+		const parsed = Number.parseInt(draft, 10);
+		if (!Number.isFinite(parsed) || parsed < 0) {
+			draft = String(count);
+			return;
+		}
+		const applied = setArenaCount(arena.id, parsed);
+		draft = String(applied);
 	}
 
 	function spawnLabel(): string {
@@ -121,18 +154,29 @@
 					<line x1="5" y1="12" x2="19" y2="12" />
 				</svg>
 			</Button>
-			<span
-				class="w-6 text-center text-sm font-semibold tabular-nums {isSelected
+			<input
+				type="number"
+				min="0"
+				max={maxForArena}
+				inputmode="numeric"
+				aria-label="Instances of {arena.meta.name}"
+				class="h-7 w-12 rounded-md border border-input bg-background text-center text-sm font-semibold tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring {isSelected
 					? 'text-primary'
 					: 'text-muted-foreground'}"
-			>
-				{count}
-			</span>
+				value={shown}
+				onfocus={() => {
+					draft = String(count);
+					editing = true;
+				}}
+				oninput={onDraftInput}
+				onblur={commitDraft}
+				onchange={commitDraft}
+			/>
 			<Button
 				variant="outline"
 				size="icon"
 				class="h-7 w-7"
-				disabled={count >= 5}
+				disabled={count >= maxForArena}
 				onclick={increment}
 			>
 				<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">

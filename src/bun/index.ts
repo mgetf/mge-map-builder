@@ -2,10 +2,11 @@ import { BrowserView, BrowserWindow, Updater, Utils } from "electrobun/bun";
 import path from "node:path";
 import fs from "node:fs";
 import type { AppRPC } from "../shared/rpc.js";
-import type {
-	ArenaPackage,
-	BuildResult,
-	CompileProgress,
+import {
+	clampArenaCount,
+	type ArenaPackage,
+	type BuildResult,
+	type CompileProgress,
 } from "../shared/types.js";
 import {
 	deleteImportedArena,
@@ -163,15 +164,18 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 				try {
 					// 1. Load all arenas and resolve the selected ones
 					const allArenas = listAllArenas();
-					const selectedEntries = config.arenas
-						.map((entry) => {
-							const arena = allArenas.find(
-								(a: ArenaPackage) => a.id === entry.arenaId,
-							);
-							if (!arena) return null;
-							return { arena, count: entry.count };
-						})
-						.filter(Boolean) as { arena: ArenaPackage; count: number }[];
+					let used = 0;
+					const selectedEntries: { arena: ArenaPackage; count: number }[] = [];
+					for (const entry of config.arenas) {
+						const arena = allArenas.find(
+							(a: ArenaPackage) => a.id === entry.arenaId,
+						);
+						if (!arena) continue;
+						const count = clampArenaCount(entry.count, 0, used);
+						if (count <= 0) continue;
+						selectedEntries.push({ arena, count });
+						used += count;
+					}
 
 					if (selectedEntries.length === 0) {
 						return {
