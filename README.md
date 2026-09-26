@@ -12,7 +12,7 @@ MGE (My Gaming Edge) is a popular 1v1 training mod for Team Fortress 2. Each MGE
 
 ## Bundled arenas
 
-Ships with the 6 most played MGE arenas:
+Ships with these prefab arenas:
 
 | Arena | Source |
 |-------|--------|
@@ -21,7 +21,11 @@ Ships with the 6 most played MGE arenas:
 | Granary Pro Middle | cp_granary_pro |
 | Product Middle | koth_product |
 | Gullywash Middle | cp_gullywash |
+| Process Middle | cp_process |
 | Endif | endif |
+| BBall | bball |
+| Ammomod Circular Fence | ammomod |
+| Ultiduo Baloo | ultiduo_baloo |
 
 ## Requirements
 
