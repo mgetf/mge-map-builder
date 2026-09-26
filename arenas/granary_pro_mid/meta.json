@@ -1,6 +1,6 @@
 {
 	"name": "Granary Middle",
-	"description": "Mid-fight arena from cp_granary with balanced sightlines",
+	"description": "Mid-fight arena from cp_granary",
 	"vmf": "area_granary_pro_mid.vmf",
 	"gamemode": "mge",
 	"team_size": "1v1 2v2",

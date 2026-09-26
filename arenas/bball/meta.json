@@ -1,0 +1,38 @@
+{
+	"name": "BBall",
+	"description": "Basketball arena with hoops at each end",
+	"vmf": "area_bball.vmf",
+	"gamemode": "bball",
+	"team_size": "1v1 2v2",
+	"frag_limit": 10,
+	"countdown_seconds": 1,
+	"allowed_classes": "soldier",
+	"hp_multiplier": 1,
+	"early_leave_threshold": 1,
+	"infinite_ammo": false,
+	"show_hp": false,
+	"min_spawn_distance": 100,
+	"respawn_delay": 2,
+	"visible_hoops": false,
+	"spawns": {
+		"red": [
+			"238 -971 0 0 90 0",
+			"103 -971 0 0 90 0",
+			"-182 -971 0 0 90 0",
+			"-402 -971 0 0 90 0"
+		],
+		"blu": [
+			"238 979 0 0 -90 0",
+			"103 979 0 0 -90 0",
+			"-182 979 0 0 -90 0",
+			"-402 979 0 0 -90 0"
+		]
+	},
+	"entities": {
+		"hoop_red": "-32 -790 144",
+		"hoop_blu": "-32 798 144",
+		"intel_start": "-32 4 128",
+		"intel_red": "-32 519 96",
+		"intel_blu": "-32 -511 96"
+	}
+}

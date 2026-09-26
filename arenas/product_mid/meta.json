@@ -1,6 +1,6 @@
 {
 	"name": "Product Middle",
-	"description": "Mid-fight arena from cp_process with vertical play and crates",
+	"description": "Mid-fight arena from koth_product",
 	"vmf": "area_product_mid.vmf",
 	"gamemode": "mge",
 	"team_size": "2v2 1v1",

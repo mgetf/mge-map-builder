@@ -1,0 +1,28 @@
+{
+	"name": "Process Middle",
+	"description": "Mid-fight arena from cp_process",
+	"vmf": "area_process_mid.vmf",
+	"gamemode": "mge",
+	"team_size": "1v1 2v2",
+	"frag_limit": 20,
+	"allowed_classes": "scout soldier demoman",
+	"hp_multiplier": 1.25,
+	"early_leave_threshold": 3,
+	"infinite_ammo": false,
+	"show_hp": false,
+	"min_spawn_distance": 550,
+	"spawns": {
+		"red": [
+			"1814 3197 447 0 -90 0",
+			"1121 1715 497 0 45 0",
+			"1294 2376 547 0 0 0",
+			"1151 3146 497 0 -45 0"
+		],
+		"blu": [
+			"1988 1539 447 0 90 0",
+			"2696 3078 497 0 -135 0",
+			"2544 2376 547 0 180 0",
+			"2608 1606 497 0 -135 0"
+		]
+	}
+}

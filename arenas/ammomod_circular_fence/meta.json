@@ -1,0 +1,25 @@
+{
+	"name": "Ammomod Circular Fence",
+	"description": "Circular ammomod arena enclosed by a security fence",
+	"vmf": "area_ammomod_circular_cage.vmf",
+	"gamemode": "ammomod",
+	"team_size": "1v1 2v2",
+	"frag_limit": 5,
+	"countdown_seconds": 3,
+	"allowed_classes": "scout soldier demoman spy",
+	"hp_multiplier": 6,
+	"early_leave_threshold": 1,
+	"infinite_ammo": true,
+	"show_hp": true,
+	"min_spawn_distance": 350,
+	"spawns": {
+		"red": [
+			"568 1009 0 0 -90 0",
+			"568 169 0 0 90 0"
+		],
+		"blu": [
+			"152 589 0 0 0 0",
+			"992 589 0 0 180 0"
+		]
+	}
+}
