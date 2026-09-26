@@ -1,12 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ArenaMeta, ArenaPackage, ArenaBounds } from "../types.js";
+import {
+	countDisplacementKeys,
+	type ArenaMeta,
+	type ArenaPackage,
+	type ArenaBounds,
+} from "../types.js";
 
 const COORD_REGEX = /\((-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\)/g;
 
-export function measureBounds(vmfPath: string): ArenaBounds {
-	const content = fs.readFileSync(vmfPath, "utf8");
-
+export function measureBoundsFromText(content: string): ArenaBounds {
+	COORD_REGEX.lastIndex = 0;
 	let minX = Infinity,
 		maxX = -Infinity;
 	let minY = Infinity,
@@ -28,7 +32,7 @@ export function measureBounds(vmfPath: string): ArenaBounds {
 	}
 
 	if (minX === Infinity) {
-		throw new Error(`No coordinates found in VMF: ${vmfPath}`);
+		throw new Error("No coordinates found in VMF.");
 	}
 
 	return {
@@ -42,6 +46,10 @@ export function measureBounds(vmfPath: string): ArenaBounds {
 		spanY: maxY - minY,
 		spanZ: maxZ - minZ,
 	};
+}
+
+export function measureBounds(vmfPath: string): ArenaBounds {
+	return measureBoundsFromText(fs.readFileSync(vmfPath, "utf8"));
 }
 
 const REQUIRED_META_FIELDS = [
@@ -95,6 +103,7 @@ export function readArenaPackage(
 		throw new Error(`VMF not found for arena ${id}: ${vmfPath}`);
 	}
 
+	const vmfContent = fs.readFileSync(vmfPath, "utf8");
 	const assetsDir = path.join(arenaDir, "assets");
 	const hasCustomAssets = fs.existsSync(assetsDir);
 
@@ -104,7 +113,8 @@ export function readArenaPackage(
 		vmfPath,
 		assetsDir: hasCustomAssets ? assetsDir : null,
 		hasCustomAssets,
-		bounds: measureBounds(vmfPath),
+		bounds: measureBoundsFromText(vmfContent),
+		displacementCount: countDisplacementKeys(vmfContent),
 		imported,
 	};
 }

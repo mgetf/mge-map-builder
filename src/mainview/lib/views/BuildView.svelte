@@ -28,7 +28,7 @@
 			{:else if build.compileStatus === "done"}
 				Your map is ready.
 			{:else if build.compileStatus === "error"}
-				The compile process encountered an error.
+				{build.buildResult?.error ?? "The compile process encountered an error."}
 			{/if}
 		</p>
 	</div>

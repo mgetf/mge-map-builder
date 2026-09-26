@@ -22,11 +22,22 @@
 	import { getArenasState } from "$lib/stores/arenas.svelte.js";
 	import { api } from "$lib/rpc.js";
 	import MenuPreview from "$lib/components/MenuPreview.svelte";
+	import { sumSelectedDisplacements } from "$lib/types.js";
 
 	let { onNavigate }: { onNavigate: (view: "arenas" | "config" | "build") => void } = $props();
 
 	const build = getBuildState();
 	const arenasState = getArenasState();
+
+	const displacementTotal = $derived(
+		sumSelectedDisplacements(build.selectedArenas, arenasState.arenas),
+	);
+	const displacementOver = $derived(
+		displacementTotal > build.maxDisplacements,
+	);
+	const displacementWarn = $derived(
+		!displacementOver && displacementTotal >= build.maxDisplacements * 0.8,
+	);
 
 	function arenaName(arenaId: string): string {
 		const arena = arenasState.arenas.find((a) => a.id === arenaId);
@@ -264,24 +275,50 @@
 				Total instances
 				<span class="ml-2 font-semibold text-foreground">{build.totalInstances} / {build.maxArenas}</span>
 			</p>
+			<p
+				class={[
+					"text-sm",
+					displacementOver && "text-destructive",
+					displacementWarn && "text-yellow-500",
+					!displacementOver && !displacementWarn && "text-muted-foreground",
+				]}
+			>
+				Displacements
+				<span
+					class={[
+						"ml-2 font-semibold tabular-nums",
+						displacementOver && "text-destructive",
+						displacementWarn && "text-yellow-500",
+						!displacementOver && !displacementWarn && "text-foreground",
+					]}
+				>
+					{displacementTotal} / {build.maxDisplacements}
+				</span>
+			</p>
 			{#if build.atArenaCap}
 				<p class="text-xs text-yellow-500">
 					MGEMod loads at most {build.maxArenas} arenas on one map.
 				</p>
 			{/if}
-			{#if build.totalInstances > 8}
+			{#if displacementOver}
+				<p class="text-xs text-destructive">
+					Over TF2's terrain limit. Remove copies or pick simpler arenas.
+				</p>
+			{:else if displacementWarn}
 				<p class="text-xs text-yellow-500">
-					More than 8 arenas can hit Source engine limits.
+					Close to the displacement cap. Terrain-heavy arenas fill this quickly.
 				</p>
 			{/if}
 		</div>
 		<Button
 			size="lg"
-			disabled={!build.canBuild}
+			disabled={!build.canBuild || displacementOver}
 			onclick={handleBuild}
 		>
 			{#if !build.canBuild}
 				{build.totalInstances === 0 ? "Select arenas to build" : "Fix errors to build"}
+			{:else if displacementOver}
+				Over displacement limit
 			{:else}
 				Build Map
 			{/if}

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import type { AppRPC } from "../shared/rpc.js";
 import {
 	clampArenaCount,
+	displacementLimitError,
 	type ArenaPackage,
 	type BuildResult,
 	type CompileProgress,
@@ -158,6 +159,8 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 						bspPath: null,
 						cfgPath: null,
 						error: "TF2 installation not found. Please set the TF2 path.",
+						errorDetail: null,
+						logPath: null,
 					};
 				}
 
@@ -183,6 +186,31 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 							bspPath: null,
 							cfgPath: null,
 							error: "No valid arenas selected.",
+							errorDetail: null,
+							logPath: null,
+						};
+					}
+
+					let displacementTotal = 0;
+					for (const entry of selectedEntries) {
+						displacementTotal +=
+							entry.arena.displacementCount * entry.count;
+					}
+					const dispError = displacementLimitError(displacementTotal);
+					if (dispError) {
+						const breakdown = selectedEntries
+							.map(
+								(entry) =>
+									`${entry.arena.meta.name} x${entry.count}: ${entry.arena.displacementCount * entry.count}`,
+							)
+							.join("\n");
+						return {
+							success: false,
+							bspPath: null,
+							cfgPath: null,
+							error: dispError,
+							errorDetail: breakdown,
+							logPath: null,
 						};
 					}
 
@@ -237,6 +265,9 @@ const rpc = BrowserView.defineRPC<AppRPC>({
 							err instanceof Error
 								? err.message
 								: "Unknown build error",
+						errorDetail:
+							err instanceof Error ? (err.stack ?? null) : null,
+						logPath: null,
 					} as const;
 					viewEvents()?.send.buildComplete(errorResult);
 					return errorResult;

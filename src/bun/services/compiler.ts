@@ -9,6 +9,13 @@ import type {
 	BuildResult,
 } from "../types.js";
 import { getTF2Paths } from "./tf2.js";
+import { classifyCompileFailure } from "./compile-errors.js";
+
+interface StageResult {
+	success: boolean;
+	error: string | null;
+	errorDetail: string | null;
+}
 
 export interface CompileOptions {
 	vmfPath: string;
@@ -28,15 +35,46 @@ export function cancelCompile(): void {
 	}
 }
 
+function writeCompileLog(
+	buildDir: string,
+	mapStem: string,
+	lines: string[],
+): string {
+	const logPath = path.join(buildDir, `${mapStem}_compile.log`);
+	fs.writeFileSync(logPath, lines.join("\n") + "\n", "utf8");
+	return logPath;
+}
+
+function failedBuild(
+	error: string,
+	errorDetail: string | null,
+	logPath: string | null,
+	bspPath: string | null = null,
+): BuildResult {
+	return {
+		success: false,
+		bspPath,
+		cfgPath: null,
+		error,
+		errorDetail,
+		logPath,
+	};
+}
+
 function runStage(
 	exe: string,
 	args: string[],
 	stage: CompileStage,
+	logLines: string[],
 	onProgress: (p: CompileProgress) => void,
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<StageResult> {
 	return new Promise((resolve) => {
 		const startTime = Date.now();
-		let lastError: string | null = null;
+		const stageLines: string[] = [];
+
+		logLines.push("");
+		logLines.push(`===== ${stage.toUpperCase()} =====`);
+		logLines.push(`Command: ${exe} ${args.join(" ")}`);
 
 		const proc = spawn(exe, args, { windowsHide: true });
 		activeProcess = proc;
@@ -45,14 +83,8 @@ function runStage(
 		const rlErr = createInterface({ input: proc.stderr! });
 
 		const emitLine = (line: string) => {
-			if (line.includes("**** leaked ****")) {
-				lastError =
-					"Map has a leak — an arena entity is outside sealed geometry";
-			} else if (line.includes("MAX_MAP_PLANES")) {
-				lastError =
-					"Too much geometry (MAX_MAP_PLANES exceeded) — try fewer arenas";
-			}
-
+			stageLines.push(line);
+			logLines.push(line);
 			onProgress({
 				stage,
 				status: "running",
@@ -69,37 +101,52 @@ function runStage(
 			const elapsed = Date.now() - startTime;
 
 			if (code === 0) {
+				const output = `${stage.toUpperCase()} completed in ${(elapsed / 1000).toFixed(1)}s`;
+				logLines.push(output);
 				onProgress({
 					stage,
 					status: "done",
-					output: `${stage.toUpperCase()} completed in ${(elapsed / 1000).toFixed(1)}s`,
+					output,
 					elapsedMs: elapsed,
 				});
-				resolve({ success: true, error: null });
-			} else {
-				const errorMsg =
-					lastError ||
-					`${stage.toUpperCase()} failed with exit code ${code}`;
-				onProgress({
-					stage,
-					status: "error",
-					output: errorMsg,
-					elapsedMs: elapsed,
-				});
-				resolve({ success: false, error: errorMsg });
+				resolve({ success: true, error: null, errorDetail: null });
+				return;
 			}
+
+			const classified = classifyCompileFailure(stageLines, stage, code);
+			logLines.push(`ERROR: ${classified.message}`);
+			if (classified.detail) {
+				logLines.push("----- compiler error detail -----");
+				logLines.push(classified.detail);
+			}
+			onProgress({
+				stage,
+				status: "error",
+				output: classified.message,
+				elapsedMs: elapsed,
+			});
+			resolve({
+				success: false,
+				error: classified.message,
+				errorDetail: classified.detail,
+			});
 		});
 
 		proc.on("error", (err) => {
 			activeProcess = null;
 			const errorMsg = `Failed to launch ${stage.toUpperCase()}: ${err.message}`;
+			logLines.push(`ERROR: ${errorMsg}`);
 			onProgress({
 				stage,
 				status: "error",
 				output: errorMsg,
 				elapsedMs: Date.now() - startTime,
 			});
-			resolve({ success: false, error: errorMsg });
+			resolve({
+				success: false,
+				error: errorMsg,
+				errorDetail: err.stack ?? null,
+			});
 		});
 	});
 }
@@ -340,28 +387,33 @@ export async function compile(options: CompileOptions): Promise<BuildResult> {
 		options;
 	const { bin, game } = getTF2Paths(tf2Root);
 	const buildDir = path.dirname(bspPath);
+	const mapStem = path.basename(bspPath, ".bsp");
+	const logLines: string[] = [
+		`MGE Map Builder compile log`,
+		`Map: ${mapStem}`,
+		`VMF: ${vmfPath}`,
+		`Started: ${new Date().toISOString()}`,
+	];
 
-	// Stage custom assets so VBSP can find them
 	const stagedFiles = stageAssets(arenas, game);
 
 	try {
-		// Stage 1: VBSP
 		const vbsp = await runStage(
 			path.join(bin, "vbsp.exe"),
 			["-game", game, vmfPath],
 			"vbsp",
+			logLines,
 			onProgress,
 		);
 		if (!vbsp.success) {
-			return {
-				success: false,
-				bspPath: null,
-				cfgPath: null,
-				error: vbsp.error,
-			};
+			const logPath = writeCompileLog(buildDir, mapStem, logLines);
+			return failedBuild(
+				vbsp.error ?? "VBSP failed.",
+				vbsp.errorDetail,
+				logPath,
+			);
 		}
 
-		// Stage 2: VVIS
 		const vvisArgs = [
 			...(fastMode ? ["-fast"] : []),
 			"-game",
@@ -372,18 +424,18 @@ export async function compile(options: CompileOptions): Promise<BuildResult> {
 			path.join(bin, "vvis.exe"),
 			vvisArgs,
 			"vvis",
+			logLines,
 			onProgress,
 		);
 		if (!vvis.success) {
-			return {
-				success: false,
-				bspPath: null,
-				cfgPath: null,
-				error: vvis.error,
-			};
+			const logPath = writeCompileLog(buildDir, mapStem, logLines);
+			return failedBuild(
+				vvis.error ?? "VVIS failed.",
+				vvis.errorDetail,
+				logPath,
+			);
 		}
 
-		// Stage 3: VRAD
 		const vradArgs = [
 			"-both",
 			...(fastMode ? ["-fast"] : ["-final"]),
@@ -395,18 +447,18 @@ export async function compile(options: CompileOptions): Promise<BuildResult> {
 			path.join(bin, "vrad.exe"),
 			vradArgs,
 			"vrad",
+			logLines,
 			onProgress,
 		);
 		if (!vrad.success) {
-			return {
-				success: false,
-				bspPath: null,
-				cfgPath: null,
-				error: vrad.error,
-			};
+			const logPath = writeCompileLog(buildDir, mapStem, logLines);
+			return failedBuild(
+				vrad.error ?? "VRAD failed.",
+				vrad.errorDetail,
+				logPath,
+			);
 		}
 
-		// Stage 4: Pack custom assets via bspzip
 		const packList = buildPackList(arenas, buildDir);
 		if (packList) {
 			const bspzip = path.join(bin, "bspzip.exe");
@@ -422,19 +474,20 @@ export async function compile(options: CompileOptions): Promise<BuildResult> {
 						bspPath,
 					],
 					"pack",
+					logLines,
 					onProgress,
 				);
-				// Clean up pack list file
 				try {
 					fs.unlinkSync(packList);
 				} catch {}
 				if (!pack.success) {
-					return {
-						success: false,
+					const logPath = writeCompileLog(buildDir, mapStem, logLines);
+					return failedBuild(
+						pack.error ?? "PACK failed.",
+						pack.errorDetail,
+						logPath,
 						bspPath,
-						cfgPath: null,
-						error: pack.error,
-					};
+					);
 				}
 			}
 		} else {
@@ -444,13 +497,17 @@ export async function compile(options: CompileOptions): Promise<BuildResult> {
 				output: "No custom assets to pack",
 				elapsedMs: 0,
 			});
+			logLines.push("No custom assets to pack");
 		}
 
+		const logPath = writeCompileLog(buildDir, mapStem, logLines);
 		return {
 			success: true,
 			bspPath,
-			cfgPath: null, // Set by the orchestrator after config generation
+			cfgPath: null,
 			error: null,
+			errorDetail: null,
+			logPath,
 		};
 	} finally {
 		cleanupStaged(stagedFiles);

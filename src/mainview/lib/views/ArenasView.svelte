@@ -1,13 +1,24 @@
 <script lang="ts">
 	import ArenaCard from "$lib/components/ArenaCard.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import { getArenasState, importArena } from "$lib/stores/arenas.svelte.js";
 	import { getBuildState } from "$lib/stores/build.svelte.js";
+	import { getArenasState, importArena } from "$lib/stores/arenas.svelte.js";
+	import { sumSelectedDisplacements } from "$lib/types.js";
 
 	let { onNavigate }: { onNavigate: (view: "arenas" | "config") => void } = $props();
 
 	const arenasState = getArenasState();
 	const build = getBuildState();
+
+	const displacementTotal = $derived(
+		sumSelectedDisplacements(build.selectedArenas, arenasState.arenas),
+	);
+	const displacementOver = $derived(
+		displacementTotal > build.maxDisplacements,
+	);
+	const displacementWarn = $derived(
+		!displacementOver && displacementTotal >= build.maxDisplacements * 0.8,
+	);
 
 	let importing = $state(false);
 	let importError = $state<string | null>(null);
@@ -72,8 +83,23 @@
 				<span class="font-semibold text-foreground">{build.totalInstances}</span>
 				<span class="text-muted-foreground">/ {build.maxArenas}</span>
 				arena instance{build.totalInstances !== 1 ? "s" : ""} selected
+				<span class="mx-2 text-border">|</span>
+				<span
+					class={[
+						"tabular-nums",
+						displacementOver && "font-semibold text-destructive",
+						displacementWarn && "font-semibold text-yellow-500",
+						!displacementOver && !displacementWarn && "text-foreground",
+					]}
+				>
+					{displacementTotal} / {build.maxDisplacements}
+				</span>
+				displacements
 				{#if build.atArenaCap}
 					<span class="ml-2 text-yellow-500">Map arena limit reached.</span>
+				{/if}
+				{#if displacementOver}
+					<span class="ml-2 text-destructive">Over TF2 terrain limit.</span>
 				{/if}
 			</div>
 			<button

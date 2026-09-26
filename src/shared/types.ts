@@ -1,6 +1,34 @@
 /** Arena slots MGEMod can load on one map. Arrays are sized MAXARENAS + 1 and index 0 is unused. */
 export const MAX_ARENAS = 63;
 
+/** TF2 engine cap on displacement faces (MAX_MAP_DISPINFO). */
+export const MAX_MAP_DISPINFO = 2048;
+
+const DISPINFO_KEY = /^\s*dispinfo\s*$/gm;
+
+export function countDisplacementKeys(vmfText: string): number {
+	DISPINFO_KEY.lastIndex = 0;
+	return vmfText.match(DISPINFO_KEY)?.length ?? 0;
+}
+
+export function sumSelectedDisplacements(
+	selected: Iterable<[string, number]>,
+	arenas: { id: string; displacementCount: number }[],
+): number {
+	const counts = new Map<string, number>();
+	for (const arena of arenas) counts.set(arena.id, arena.displacementCount);
+	let total = 0;
+	for (const [id, copies] of selected) {
+		total += (counts.get(id) ?? 0) * copies;
+	}
+	return total;
+}
+
+export function displacementLimitError(used: number): string | null {
+	if (used <= MAX_MAP_DISPINFO) return null;
+	return `Too many displacement surfaces (${used} / ${MAX_MAP_DISPINFO}). TF2's MAX_MAP_DISPINFO is ${MAX_MAP_DISPINFO}. Remove copies or pick arenas with less terrain.`;
+}
+
 export function clampArenaCount(
 	requested: number,
 	currentForArena: number,
@@ -71,6 +99,7 @@ export interface ArenaPackage {
 	assetsDir: string | null; // absolute path to assets/ or null
 	hasCustomAssets: boolean;
 	bounds: ArenaBounds; // measured from VMF
+	displacementCount: number;
 	imported: boolean;
 }
 
@@ -141,4 +170,6 @@ export interface BuildResult {
 	bspPath: string | null;
 	cfgPath: string | null;
 	error: string | null;
+	errorDetail: string | null;
+	logPath: string | null;
 }

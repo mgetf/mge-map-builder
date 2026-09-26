@@ -1,5 +1,6 @@
 import {
 	MAX_ARENAS,
+	MAX_MAP_DISPINFO,
 	clampArenaCount,
 	type BuildConfig,
 	type BuildResult,
@@ -129,6 +130,9 @@ export function getBuildState() {
 		get maxArenas() {
 			return MAX_ARENAS;
 		},
+		get maxDisplacements() {
+			return MAX_MAP_DISPINFO;
+		},
 		get atArenaCap() {
 			let total = 0;
 			for (const count of selectedArenas.values()) {
@@ -257,7 +261,7 @@ export function startBuild() {
 
 export function addProgress(p: CompileProgress) {
 	// Append to log (keep last 500 lines to prevent unbounded growth)
-	compileLog = [...compileLog.slice(-499), p.output];
+	compileLog = [...compileLog.slice(-1999), p.output];
 
 	// Update stage info
 	compileStages = {

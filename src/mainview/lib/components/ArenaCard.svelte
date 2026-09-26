@@ -8,7 +8,10 @@
 	} from "$lib/components/ui/card/index.js";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import { getBuildState, setArenaCount } from "$lib/stores/build.svelte.js";
+	import {
+		getBuildState,
+		setArenaCount,
+	} from "$lib/stores/build.svelte.js";
 	import { removeImportedArena } from "$lib/stores/arenas.svelte.js";
 
 	let { arena }: { arena: ArenaPackage } = $props();
@@ -138,6 +141,9 @@
 			<span>Frag {arena.meta.frag_limit}</span>
 			<span>{spawnLabel()}</span>
 			<span>{classesLabel()}</span>
+			<span>
+				{arena.displacementCount} disp{arena.displacementCount === 1 ? "" : "s"}
+			</span>
 		</div>
 	</CardContent>
 

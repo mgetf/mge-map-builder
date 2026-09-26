@@ -10,6 +10,7 @@
 	let copying = $state(false);
 	let copySuccess = $state(false);
 	let copyError = $state<string | null>(null);
+	let copyFeedback = $state<"error" | "log" | null>(null);
 
 	async function handleCopyToTF2() {
 		const result = build.buildResult;
@@ -43,6 +44,13 @@
 		await api.openFolder({ path: folder });
 	}
 
+	async function handleOpenLogFolder() {
+		const logPath = build.buildResult?.logPath;
+		if (!logPath) return;
+		const folder = logPath.replace(/[/\\][^/\\]+$/, "");
+		await api.openFolder({ path: folder });
+	}
+
 	function handleBuildAnother() {
 		resetBuild();
 		onNavigate("config");
@@ -51,6 +59,29 @@
 	function fileName(p: string): string {
 		const parts = p.split(/[/\\]/);
 		return parts[parts.length - 1] ?? p;
+	}
+
+	function errorClipboardText(): string {
+		const result = build.buildResult;
+		const parts = [
+			result?.error ?? "The compile process encountered an error.",
+		];
+		if (result?.errorDetail) parts.push("", result.errorDetail);
+		if (result?.logPath) parts.push("", `Log: ${result.logPath}`);
+		return parts.join("\n");
+	}
+
+	async function copyText(text: string, which: "error" | "log") {
+		try {
+			await navigator.clipboard.writeText(text);
+			copyFeedback = which;
+			copyError = null;
+			setTimeout(() => {
+				if (copyFeedback === which) copyFeedback = null;
+			}, 1500);
+		} catch {
+			copyError = "Could not copy to clipboard.";
+		}
 	}
 </script>
 
@@ -98,12 +129,37 @@
 				<line x1="12" y1="8" x2="12" y2="12" />
 				<line x1="12" y1="16" x2="12.01" y2="16" />
 			</svg>
-			<p class="text-sm text-destructive">
-				{build.buildResult?.error ?? "The compile process encountered an error."}
-			</p>
+			<div class="min-w-0 flex-1 space-y-1.5">
+				<p class="text-sm text-destructive">
+					{build.buildResult?.error ?? "The compile process encountered an error."}
+				</p>
+				{#if build.buildResult?.errorDetail}
+					<pre class="max-h-28 overflow-y-auto rounded-md border border-destructive/30 bg-black/40 p-2 font-mono text-xs text-destructive/90 whitespace-pre-wrap break-all">{build.buildResult.errorDetail}</pre>
+				{/if}
+				{#if copyError}
+					<p class="text-xs text-destructive">{copyError}</p>
+				{/if}
+			</div>
 		</div>
-		<Button variant="outline" size="sm" onclick={handleBuildAnother}>
-			Try Again
-		</Button>
+		<div class="flex flex-wrap gap-2">
+			<Button variant="outline" size="sm" onclick={() => copyText(errorClipboardText(), "error")}>
+				{copyFeedback === "error" ? "Copied" : "Copy error"}
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={() => copyText(build.compileLog.join("\n"), "log")}
+			>
+				{copyFeedback === "log" ? "Copied" : "Copy log"}
+			</Button>
+			{#if build.buildResult?.logPath}
+				<Button variant="outline" size="sm" onclick={handleOpenLogFolder}>
+					Open log folder
+				</Button>
+			{/if}
+			<Button variant="outline" size="sm" onclick={handleBuildAnother}>
+				Try Again
+			</Button>
+		</div>
 	{/if}
 </div>

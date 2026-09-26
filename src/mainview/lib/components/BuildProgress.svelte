@@ -14,10 +14,15 @@
 	};
 
 	let logContainer: HTMLElement | undefined = $state();
+	let copyFeedback = $state<"log" | null>(null);
 
 	$effect(() => {
 		void build.compileLog.length;
-		if (build.compileStatus !== "running" || !logContainer) return;
+		void build.compileStatus;
+		if (!logContainer) return;
+		if (build.compileStatus !== "running" && build.compileStatus !== "error") {
+			return;
+		}
 		Promise.resolve().then(() => {
 			if (logContainer) {
 				logContainer.scrollTop = logContainer.scrollHeight;
@@ -31,8 +36,46 @@
 		return `${(ms / 1000).toFixed(1)}s`;
 	}
 
+	function lineTone(line: string): string {
+		const l = line.toLowerCase();
+		if (
+			l.includes("max_map_") ||
+			l.includes("nummapdispinfo") ||
+			l.includes("leaked") ||
+			l.includes("error") ||
+			l.includes("failed") ||
+			l.includes("parsedisp")
+		) {
+			return "text-destructive";
+		}
+		if (
+			/^brush \d+/i.test(line) ||
+			/^side \d+/i.test(line) ||
+			/^texture:/i.test(line)
+		) {
+			return "text-destructive";
+		}
+		if (l.includes("warning")) return "text-yellow-500";
+		if (l.includes("completed") || l.includes("finished")) return "text-green-400";
+		return "";
+	}
+
 	async function handleCancel() {
 		await api.cancelBuild({});
+	}
+
+	async function handleCopyLog() {
+		const text = build.compileLog.join("\n");
+		if (!text) return;
+		try {
+			await navigator.clipboard.writeText(text);
+			copyFeedback = "log";
+			setTimeout(() => {
+				if (copyFeedback === "log") copyFeedback = null;
+			}, 1500);
+		} catch {
+			copyFeedback = null;
+		}
 	}
 </script>
 
@@ -81,7 +124,12 @@
 			</div>
 		{/each}
 
-		<div class="ml-auto">
+		<div class="ml-auto flex items-center gap-2">
+			{#if build.compileLog.length > 0}
+				<Button variant="outline" size="sm" onclick={handleCopyLog}>
+					{copyFeedback === "log" ? "Copied" : "Copy log"}
+				</Button>
+			{/if}
 			{#if build.compileStatus === "running"}
 				<Button variant="outline" size="sm" onclick={handleCancel}>
 					Cancel
@@ -103,12 +151,7 @@
 			<p class="text-muted-foreground/50">Waiting for output...</p>
 		{:else}
 			{#each build.compileLog as line, i (i)}
-				<div
-					class="whitespace-pre-wrap break-all
-						{line.includes('error') || line.includes('Error') || line.includes('failed') ? 'text-destructive' : ''}
-						{line.includes('Warning') || line.includes('warning') ? 'text-yellow-500' : ''}
-						{line.includes('completed') || line.includes('finished') ? 'text-green-400' : ''}"
-				>
+				<div class={["whitespace-pre-wrap break-all", lineTone(line)]}>
 					{line}
 				</div>
 			{/each}
